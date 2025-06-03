@@ -1,5 +1,5 @@
-#include "../components/rendering.hpp"
-#include "../components/camera.hpp"
+#include "../components/rendering.h"
+#include "../components/camera.h"
 #include <raylib.h>
 #include <flecs.h>
 

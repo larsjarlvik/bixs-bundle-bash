@@ -1,8 +1,8 @@
 #include <flecs.h>
 #include <raylib.h>
-#include "ecs/components/camera.hpp"
-#include "ecs/components/rendering.hpp"
-#include "ecs/world.hpp"
+#include "ecs/components/camera.h"
+#include "ecs/components/rendering.h"
+#include "ecs/world.h"
 
 auto main() -> int {
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);

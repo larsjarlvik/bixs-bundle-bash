@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../components/rendering.hpp"
+#include "../components/rendering.h"
 #include <raylib.h>
 #include <flecs.h>
 
