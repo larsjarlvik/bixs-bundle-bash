@@ -6,3 +6,4 @@ struct WorldCamera {
     float distance;
 };
 
+struct WorldMouseTarget {};

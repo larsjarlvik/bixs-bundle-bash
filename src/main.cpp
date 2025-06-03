@@ -1,10 +1,18 @@
 #include <flecs.h>
 #include <raylib.h>
-#include <world/components/camera.h>
-#include <world/components/rendering.h>
-#include <world/world.h>
+#include <random>
+#include <ctime>
+#include "world/components/camera.h"
+#include "world/components/rendering.h"
+#include "world/world.h"
+
+auto GetRandomFloat(float min, float max) -> float {
+    return min + (((float)rand() / (float)RAND_MAX) * (max - min));
+}
 
 auto main() -> int {
+    srand(static_cast<unsigned int>(time(nullptr)));
+
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(1280, 720, "Bix's Bundle Bash!");
     
@@ -21,22 +29,42 @@ auto main() -> int {
     });
     
     auto shader = LoadShader("assets/shaders/world.vs", "assets/shaders/model.fs");
-    auto ecs_bix = world.ecs.entity("Bix")
+    auto world_shader = WorldShader{
+        .shader = shader,
+        .loc_light_dir = GetShaderLocation(shader, "lightDir"),
+        .loc_light_color = GetShaderLocation(shader, "lightColor"),
+        .loc_view_pos = GetShaderLocation(shader, "viewPos"),
+        .loc_use_texture = GetShaderLocation(shader, "useTexture"),
+    };
+
+    // Create character model
+    auto bix_model = LoadModel("assets/models/bix.glb");
+    world.ecs.entity("Bix")
         .set<WorldModel>({
-            .model = LoadModel("assets/models/bix.glb"), 
+            .model = bix_model, 
             .textured = true
         })
         .set<WorldPos>({
             .pos = {0.0F, 0.0F, 0.0F}
         })
-        .set<WorldShader>({
-            .shader = shader,
-            .loc_light_dir = GetShaderLocation(shader, "lightDir"),
-            .loc_light_color = GetShaderLocation(shader, "lightColor"),
-            .loc_view_pos = GetShaderLocation(shader, "viewPos"),
-            .loc_use_texture = GetShaderLocation(shader, "useTexture"),
-        });
+        .set<WorldShader>(world_shader)
+        .add<WorldMouseTarget>();
 
+    // Create game objects
+    std::uniform_real_distribution<float> dist(-10.0F, 10.0F);
+    
+    auto banana_model = LoadModel("assets/models/banana.glb");
+    for (int i = 0; i < 10; ++i) {
+        world.ecs.entity()
+            .set<WorldModel>({
+                .model = banana_model,
+                .textured = false
+            })
+            .set<WorldPos>({
+                .pos = { GetRandomFloat(-10.0F, 10.0F), 0.0F, GetRandomFloat(-10.0F, 10.0F) }
+            })
+            .set<WorldShader>(world_shader);
+    }
 
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -47,6 +75,9 @@ auto main() -> int {
         EndDrawing();
     }
     
+    UnloadModel(bix_model);
+    UnloadModel(banana_model);
+    UnloadShader(shader);
     CloseWindow();
     return 0;
 }
