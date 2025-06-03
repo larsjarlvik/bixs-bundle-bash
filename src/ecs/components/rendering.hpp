@@ -1,11 +1,6 @@
 #pragma once
 #include <raylib.h>
 
-struct WorldCamera {
-    Camera camera;
-    float distance;
-};
-
 struct WorldModel {
     Model model;
     bool textured;
