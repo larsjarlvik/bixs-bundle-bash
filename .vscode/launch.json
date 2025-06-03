@@ -3,11 +3,12 @@
   "configurations": [
     {
       "type": "lldb",
-      "name": "CMake Debug (automatic)",
+      "name": "Debug",
       "request": "launch",
-      "program": "${command:cmake.launchTargetPath}",
+      "program": "${workspaceFolder}/build/BixsBundleBash",
       "args": [],
       "cwd": "${workspaceFolder}",
+      "preLaunchTask": "CMake: build"
     }
   ]
 }
