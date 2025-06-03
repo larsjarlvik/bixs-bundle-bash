@@ -4,6 +4,7 @@ project(BixsBundleBash)
 set(CMAKE_C_COMPILER "/usr/bin/clang" CACHE STRING "" FORCE)
 set(CMAKE_CXX_COMPILER "/usr/bin/clang++" CACHE STRING "" FORCE)
 
+
 find_package(flecs CONFIG REQUIRED)
 find_package(raylib CONFIG REQUIRED)
 

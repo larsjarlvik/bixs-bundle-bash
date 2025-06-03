@@ -1,8 +1,7 @@
 #pragma once
-
-#include "../components/rendering.h"
 #include <raylib.h>
 #include <flecs.h>
+#include <world/components/rendering.h>
 
 void begin_render(flecs::iter &iter);
 void setup_lighting(flecs::entity entity, WorldShader &shader);

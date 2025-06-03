@@ -1,7 +1,7 @@
 #include <flecs.h>
 #include <raylib.h>
 #include <raymath.h>
-#include "../components/camera.h"
+#include <world/components/camera.h>
 
 void update_camera(flecs::iter &iter) {
     auto *cam = iter.world().get_mut<WorldCamera>();

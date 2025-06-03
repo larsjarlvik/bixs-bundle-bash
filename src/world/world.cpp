@@ -1,8 +1,8 @@
-#include "world.h"
 #include <flecs.h>
-#include "components/rendering.h"
-#include "systems/render_systems.h"
-#include "systems/camera_systems.h"
+#include <world/world.h>
+#include <world/components/rendering.h>
+#include <world/systems/render_systems.h>
+#include <world/systems/camera_systems.h>
 
 auto World::create_world() -> World {
     flecs::world ecs;

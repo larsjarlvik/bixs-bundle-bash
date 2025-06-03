@@ -1,7 +1,7 @@
-#include "../components/rendering.h"
-#include "../components/camera.h"
 #include <raylib.h>
 #include <flecs.h>
+#include <world/components/rendering.h>
+#include <world/components/camera.h>
 
 void begin_render(flecs::iter &iter) {
     const auto *cam = iter.world().get<WorldCamera>();
