@@ -2,8 +2,8 @@
 #include <raylib.h>
 #include <random>
 #include <ctime>
-#include "world/components/camera.h"
-#include "world/components/rendering.h"
+#include "world/components/gameplay.h"
+#include "world/components/render.h"
 #include "world/world.h"
 
 auto GetRandomFloat(float min, float max) -> float {
@@ -51,12 +51,11 @@ auto main() -> int {
         })
         .set<Animation>({
             .index = 1,
-            .frame = 0
+            .frame_time = 0,
+            .speed = 240.0,
         })
-        .set<Position>({
-            .pos = {0.0F, 0.0F, 0.0F}
-        })
-        .set<Rotation>({
+        .set<WorldTransform>({
+            .pos = {0.0F, 0.0F, 0.0F},
             .yaw = 0.0F
         })
         .set<WorldShader>(world_shader)
@@ -75,8 +74,9 @@ auto main() -> int {
                 .model = banana_model,
                 .textured = false
             })
-            .set<Position>({
-                .pos = { GetRandomFloat(-10.0F, 10.0F), 0.0F, GetRandomFloat(-10.0F, 10.0F) }
+            .set<WorldTransform>({
+                .pos = { GetRandomFloat(-10.0F, 10.0F), 0.0F, GetRandomFloat(-10.0F, 10.0F) },
+                .yaw = 0.0
             })
             .set<WorldShader>(world_shader);
     }

@@ -1,6 +1,11 @@
 #pragma once
 #include <raylib.h>
 
+struct WorldCamera {
+    Camera camera;
+    float distance;
+};
+
 struct WorldModel {
     Model model;
     ModelAnimation* animations;
@@ -9,14 +14,12 @@ struct WorldModel {
 
 struct Animation {
     int index;
-    int frame;
+    float frame_time;
+    float speed;
 };
 
-struct Position {
+struct WorldTransform {
     Vector3 pos;
-};
-
-struct Rotation {
     float yaw;
 };
 
