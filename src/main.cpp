@@ -38,17 +38,32 @@ auto main() -> int {
     };
 
     // Create character model
+    int bix_anim_count = 0;
+    
     auto bix_model = LoadModel("assets/models/bix.glb");
+    ModelAnimation* bix_animations = LoadModelAnimations("assets/models/bix.glb", &bix_anim_count);
+
     world.ecs.entity("Bix")
         .set<WorldModel>({
             .model = bix_model, 
+            .animations = bix_animations,
             .textured = true
         })
-        .set<WorldPos>({
+        .set<Animation>({
+            .index = 1,
+            .frame = 0
+        })
+        .set<Position>({
             .pos = {0.0F, 0.0F, 0.0F}
         })
+        .set<Rotation>({
+            .yaw = 0.0F
+        })
         .set<WorldShader>(world_shader)
-        .add<WorldMouseTarget>();
+        .set<MoveTo>({
+            .target = {0.0F, 0.0F, 0.0F},
+            .speed = 0.05F
+        });
 
     // Create game objects
     std::uniform_real_distribution<float> dist(-10.0F, 10.0F);
@@ -60,7 +75,7 @@ auto main() -> int {
                 .model = banana_model,
                 .textured = false
             })
-            .set<WorldPos>({
+            .set<Position>({
                 .pos = { GetRandomFloat(-10.0F, 10.0F), 0.0F, GetRandomFloat(-10.0F, 10.0F) }
             })
             .set<WorldShader>(world_shader);

@@ -6,4 +6,7 @@ struct WorldCamera {
     float distance;
 };
 
-struct WorldMouseTarget {};
+struct MoveTo {
+    Vector3 target;
+    float speed;
+};

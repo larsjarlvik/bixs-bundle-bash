@@ -3,11 +3,21 @@
 
 struct WorldModel {
     Model model;
+    ModelAnimation* animations;
     bool textured;
 };
 
-struct WorldPos {
+struct Animation {
+    int index;
+    int frame;
+};
+
+struct Position {
     Vector3 pos;
+};
+
+struct Rotation {
+    float yaw;
 };
 
 struct WorldShader {
