@@ -1,12 +1,12 @@
 #include <flecs.h>
 #include <raylib.h>
 #include "world/world.h"
+
+#include "world/systems/interpolation.h"
 #include "world/systems/render.h"
 #include "world/systems/gameplay.h"
 
-
 constexpr float FIXED_DT = 1.0F / 60.0F;
-
 
 auto World::create_world() -> World {
     const flecs::world ecs;
@@ -33,6 +33,7 @@ auto World::create_world() -> World {
         .accumulator = 0.0F,
     };
 
+    interpolation_systems::register_systems(world);
     gameplay_systems::register_systems(world);
     render_systems::register_systems(world);
 
@@ -40,14 +41,16 @@ auto World::create_world() -> World {
 }
 
 auto World::update() -> void {
+
     const float dt = GetFrameTime();
     accumulator += dt;
-    
     // ReSharper disable once CppDFALoopConditionNotUpdated
     while (accumulator >= FIXED_DT) {
-        ecs.run_pipeline(fixed_pipeline, dt);
+        ecs.run_pipeline(fixed_pipeline, FIXED_DT);
+
         accumulator -= FIXED_DT;
     }
 
-    ecs.run_pipeline(render_pipeline, GetFrameTime());
+    const float alpha = accumulator / FIXED_DT;
+    ecs.run_pipeline(render_pipeline, alpha);
 }

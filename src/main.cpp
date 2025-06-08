@@ -80,7 +80,7 @@ auto main() -> int {
                 .textured = false
             })
             .set<WorldTransform>({
-                .pos = { GetRandomFloat(-10.0F, 10.0F), 0.0F, GetRandomFloat(-10.0F, 10.0F) },
+                .pos = { GetRandomFloat(-5.0F, 5.0F), 0.0F, GetRandomFloat(-5.0F, 5.0F) },
                 .yaw = 0.0
             })
             .set<WorldShader>(world_shader);

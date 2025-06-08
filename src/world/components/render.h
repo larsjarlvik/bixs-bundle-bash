@@ -24,6 +24,11 @@ struct WorldTransform {
     float yaw;
 };
 
+struct PrevWorldTransform {
+    Vector3 pos;
+    float yaw;
+};
+
 struct WorldShader {
     Shader shader;
     int loc_light_dir;

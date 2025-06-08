@@ -4,6 +4,7 @@
 #include <raymath.h>
 #include "world/components/render.h"
 #include "world/world.h"
+#include "world/components/interpolation.h"
 
 namespace render_systems {
     void update_camera(flecs::iter &iter) {
@@ -42,11 +43,11 @@ namespace render_systems {
             anim.frame_time -= animation_duration;
         }
 
-        const auto current_frame = static_cast<int>(anim.frame_time * 60.0F);
+        const auto current_frame = static_cast<int>(anim.frame_time * 240.0F);
         UpdateModelAnimation(model.model, animation, current_frame);
     }
 
-    void render_model(const flecs::entity entity, WorldModel &model, const WorldShader &shader, const WorldTransform &transform) {
+    void render_model(const flecs::entity entity, WorldModel &model, const WorldShader &shader, const InterpolationState &state) {
         const auto *cam = entity.world().get<WorldCamera>();
         if (cam == nullptr) {
             return;
@@ -61,8 +62,8 @@ namespace render_systems {
             model.model.materials[i].shader = shader.shader;
         }
         
-        const auto mat_rotation = QuaternionToMatrix(QuaternionFromAxisAngle((Vector3){ 0, 1, 0 }, DEG2RAD * transform.yaw));
-        const auto mat_translation = MatrixTranslate(transform.pos.x, transform.pos.y, transform.pos.z);
+        const auto mat_rotation = QuaternionToMatrix(QuaternionFromAxisAngle((Vector3){ 0, 1, 0 }, DEG2RAD * state.render_yaw));
+        const auto mat_translation = MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z);
         const auto mat_transform = MatrixMultiply(mat_rotation, mat_translation);
         
         model.model.transform = mat_transform;
@@ -93,11 +94,11 @@ namespace render_systems {
             .kind(world.fixed_phase)
             .each(animate_model);
             
-        world.ecs.system<WorldModel, WorldShader, WorldTransform>("render_model")
+        world.ecs.system<WorldModel, WorldShader, InterpolationState>("render_model")
             .kind(world.render_phase)
             .each(render_model);
                 
-        world.ecs.system("render_end")
+        world.ecs.system("end_render")
             .kind(world.render_phase)
             .run(end_render);
     }
