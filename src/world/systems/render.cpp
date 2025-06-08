@@ -24,7 +24,7 @@ namespace render_systems {
         }
     }
 
-    void setup_lighting(flecs::entity entity, const WorldShader &shader) {
+    void setup_lighting(flecs::entity, const WorldShader &shader) {
         constexpr Vector3 light_dir = { -0.5F, -1.0F, -0.5F };
         constexpr Vector3 light_color = { 0.4F, 0.4F, 0.4F };
 
@@ -32,7 +32,7 @@ namespace render_systems {
         SetShaderValue(shader.shader, shader.loc_light_color, &light_color, SHADER_UNIFORM_VEC3);
     }
 
-    void animate_model(const flecs::iter& iter, size_t t, WorldModel &model, Animation &anim) {
+    void animate_model(const flecs::iter& iter, size_t, WorldModel &model, Animation &anim) {
         const auto animation = model.animations[anim.name];
         anim.frame_time += iter.delta_time();
 
@@ -52,7 +52,7 @@ namespace render_systems {
             return;
         }
         
-        auto shader_bool = static_cast<int>(model.textured);
+        const auto shader_bool = static_cast<int>(model.textured);
         SetShaderValue(shader.shader, shader.loc_use_texture, &shader_bool, SHADER_UNIFORM_INT);
         SetShaderValue(shader.shader, shader.loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
 
@@ -61,16 +61,16 @@ namespace render_systems {
             model.model.materials[i].shader = shader.shader;
         }
         
-        auto mat_rotation = QuaternionToMatrix(QuaternionFromAxisAngle((Vector3){ 0, 1, 0 }, DEG2RAD * transform.yaw));
-        auto mat_translation = MatrixTranslate(transform.pos.x, transform.pos.y, transform.pos.z);
-        auto mat_transform = MatrixMultiply(mat_rotation, mat_translation);
+        const auto mat_rotation = QuaternionToMatrix(QuaternionFromAxisAngle((Vector3){ 0, 1, 0 }, DEG2RAD * transform.yaw));
+        const auto mat_translation = MatrixTranslate(transform.pos.x, transform.pos.y, transform.pos.z);
+        const auto mat_transform = MatrixMultiply(mat_rotation, mat_translation);
         
         model.model.transform = mat_transform;
 
-        DrawModel(model.model, {0}, 1.0F, WHITE);
+        DrawModel(model.model, {}, 1.0F, WHITE);
     }
 
-    void end_render(flecs::iter &iter) {
+    void end_render(flecs::iter) {
         EndMode3D();
     }
 

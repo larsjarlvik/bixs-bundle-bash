@@ -10,7 +10,7 @@ auto GetRandomFloat(const float min, const float max) -> float {
     static std::random_device rd;
     static std::mt19937 gen(rd());
 
-    std::uniform_real_distribution<float> dist(min, max);
+    std::uniform_real_distribution dist(min, max);
     return dist(gen);
 }
 
@@ -30,8 +30,8 @@ auto main() -> int {
         .distance = 5.0F
     });
     
-    auto shader = LoadShader("assets/shaders/world.vs", "assets/shaders/model.fs");
-    auto world_shader = WorldShader{
+    const auto shader = LoadShader("assets/shaders/world.vs", "assets/shaders/model.fs");
+    const auto world_shader = WorldShader{
         .shader = shader,
         .loc_light_dir = GetShaderLocation(shader, "lightDir"),
         .loc_light_color = GetShaderLocation(shader, "lightColor"),
@@ -41,9 +41,9 @@ auto main() -> int {
 
     // Create character model
     int bix_anim_count = 0;
-    
-    auto bix_model = LoadModel("assets/models/bix.glb");
-    ModelAnimation* bix_animations = LoadModelAnimations("assets/models/bix.glb", &bix_anim_count);
+
+    const auto bix_model = LoadModel("assets/models/bix.glb");
+    const auto* bix_animations = LoadModelAnimations("assets/models/bix.glb", &bix_anim_count);
     std::map<std::string, ModelAnimation> animationMap;
 
     for (int i = 0; i < bix_anim_count; i++) {
@@ -70,8 +70,8 @@ auto main() -> int {
             .speed = 0.05F
         });
 
-    
-    auto banana_model = LoadModel("assets/models/banana.glb");
+
+    const auto banana_model = LoadModel("assets/models/banana.glb");
     for (int i = 0; i < 10; ++i) {
         // ReSharper disable once CppExpressionWithoutSideEffects
         world.ecs.entity()

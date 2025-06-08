@@ -26,9 +26,9 @@ namespace gameplay_systems {
         }
     }
 
-    void move_to(flecs::entity entity, const MoveTo &move_to, WorldTransform &transform, Animation &animation) {
-        Vector3 direction = Vector3Subtract(move_to.target, transform.pos);
-        Vector3 forward = Vector3Normalize(direction);
+    void move_to(const MoveTo &move_to, WorldTransform &transform, Animation &animation) {
+        const auto direction = Vector3Subtract(move_to.target, transform.pos);
+        const auto forward = Vector3Normalize(direction);
 
         if (Vector3Length(direction) < move_to.speed) {
             transform.pos = move_to.target;
