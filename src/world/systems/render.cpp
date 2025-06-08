@@ -24,30 +24,29 @@ namespace render_systems {
         }
     }
 
-    void setup_lighting(flecs::entity entity, WorldShader &shader) {
-        Vector3 light_dir = { -0.5F, -1.0F, -0.5F };
-        Vector3 light_color = { 0.4F, 0.4F, 0.4F };
+    void setup_lighting(flecs::entity entity, const WorldShader &shader) {
+        constexpr Vector3 light_dir = { -0.5F, -1.0F, -0.5F };
+        constexpr Vector3 light_color = { 0.4F, 0.4F, 0.4F };
 
         SetShaderValue(shader.shader, shader.loc_light_dir, &light_dir, SHADER_UNIFORM_VEC3);
         SetShaderValue(shader.shader, shader.loc_light_color, &light_color, SHADER_UNIFORM_VEC3);
     }
 
-    void animate_model(flecs::iter& iter, size_t t, WorldModel &model, Animation &anim) {
-        if (model.animations == nullptr || model.animations[anim.index].frameCount <= 0) {
-            return;
+    void animate_model(const flecs::iter& iter, size_t t, WorldModel &model, Animation &anim) {
+        const auto animation = model.animations[anim.name];
+        anim.frame_time += iter.delta_time();
+
+        const float animation_duration = static_cast<float>(model.animations[anim.name].frameCount) / 60.0F;
+        
+        while (anim.frame_time >= animation_duration) {
+            anim.frame_time -= animation_duration;
         }
-        
-        anim.frame_time += iter.delta_time() * anim.speed;
-        
-        int frame_count = model.animations[anim.index].frameCount;
-        while (anim.frame_time >= frame_count) {
-            anim.frame_time -= frame_count;
-        }
-        
-        UpdateModelAnimation(model.model, model.animations[anim.index], (int)anim.frame_time);
+
+        const auto current_frame = static_cast<int>(anim.frame_time * 60.0F);
+        UpdateModelAnimation(model.model, animation, current_frame);
     }
 
-    void render_model(flecs::entity entity, WorldModel &model, WorldShader &shader, WorldTransform &transform) {
+    void render_model(const flecs::entity entity, WorldModel &model, const WorldShader &shader, const WorldTransform &transform) {
         const auto *cam = entity.world().get<WorldCamera>();
         if (cam == nullptr) {
             return;
@@ -75,7 +74,7 @@ namespace render_systems {
         EndMode3D();
     }
 
-    void register_systems(World &world) {
+    void register_systems(const World &world) {
         world.ecs.system("update_camera")
             .kind(world.render_phase)
             .with<WorldCamera>()

@@ -1,5 +1,7 @@
 #pragma once
+#include <map>
 #include <raylib.h>
+#include <string>
 
 struct WorldCamera {
     Camera camera;
@@ -8,14 +10,13 @@ struct WorldCamera {
 
 struct WorldModel {
     Model model;
-    ModelAnimation* animations;
+    std::map<std::string, ModelAnimation> animations;
     bool textured;
 };
 
 struct Animation {
-    int index;
+    std::string name;
     float frame_time;
-    float speed;
 };
 
 struct WorldTransform {

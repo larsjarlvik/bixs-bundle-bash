@@ -6,13 +6,15 @@
 #include "world/components/render.h"
 #include "world/world.h"
 
-auto GetRandomFloat(float min, float max) -> float {
-    return min + (((float)rand() / (float)RAND_MAX) * (max - min));
+auto GetRandomFloat(const float min, const float max) -> float {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+
+    std::uniform_real_distribution<float> dist(min, max);
+    return dist(gen);
 }
 
 auto main() -> int {
-    srand(static_cast<unsigned int>(time(nullptr)));
-
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(1280, 720, "Bix's Bundle Bash!");
     
@@ -42,17 +44,21 @@ auto main() -> int {
     
     auto bix_model = LoadModel("assets/models/bix.glb");
     ModelAnimation* bix_animations = LoadModelAnimations("assets/models/bix.glb", &bix_anim_count);
+    std::map<std::string, ModelAnimation> animationMap;
+
+    for (int i = 0; i < bix_anim_count; i++) {
+        animationMap[bix_animations[i].name] = bix_animations[i];
+    }
 
     world.ecs.entity("Bix")
         .set<WorldModel>({
             .model = bix_model, 
-            .animations = bix_animations,
+            .animations = animationMap,
             .textured = true
         })
         .set<Animation>({
-            .index = 1,
+            .name = "Idle",
             .frame_time = 0,
-            .speed = 240.0,
         })
         .set<WorldTransform>({
             .pos = {0.0F, 0.0F, 0.0F},
@@ -64,11 +70,10 @@ auto main() -> int {
             .speed = 0.05F
         });
 
-    // Create game objects
-    std::uniform_real_distribution<float> dist(-10.0F, 10.0F);
     
     auto banana_model = LoadModel("assets/models/banana.glb");
     for (int i = 0; i < 10; ++i) {
+        // ReSharper disable once CppExpressionWithoutSideEffects
         world.ecs.entity()
             .set<WorldModel>({
                 .model = banana_model,

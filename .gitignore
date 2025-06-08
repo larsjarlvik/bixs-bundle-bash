@@ -5,6 +5,11 @@
 
 # CMake files
 /CMakeUserPresets.json
+/.cmake
+/CMakeCache.txt
 
 # VS Code settings
 /.vscode/c_cpp_properties.json
+
+# CLion
+/.idea

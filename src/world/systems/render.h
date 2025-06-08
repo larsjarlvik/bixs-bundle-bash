@@ -2,5 +2,5 @@
 #include "world/world.h"
 
 namespace render_systems {
-    void register_systems(World &world);
+    void register_systems(const World &world);
 }
