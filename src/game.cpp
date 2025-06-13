@@ -23,9 +23,6 @@ auto GetRandomFloat(const float min, const float max) -> float {
 }
 
 void init_game() {
-    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
-    InitWindow(1280, 720, "Bix's Bundle Bash!");
-
     auto world = World::create_world();
 
     world.ecs.set<WorldCamera>({
