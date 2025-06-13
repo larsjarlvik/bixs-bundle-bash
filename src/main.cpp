@@ -1,4 +1,5 @@
 #include <raylib.h>
+#include "game.h"
 
 int main() {
     // Platform-specific window setup
@@ -10,14 +11,6 @@ int main() {
     InitWindow(800, 600, "Blue Screen Test");
 #endif
 
-    SetTargetFPS(60);
-
-    while (!WindowShouldClose()) {
-        BeginDrawing();
-        ClearBackground(BLUE);
-        EndDrawing();
-    }
-
-    CloseWindow();
+    init_game();
     return 0;
 }

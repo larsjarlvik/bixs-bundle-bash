@@ -31,11 +31,15 @@ FetchContent_Declare(raylib
     GIT_REPOSITORY https://github.com/raysan5/raylib.git
     GIT_TAG 5.5
 )
+FetchContent_Declare(flecs
+    GIT_REPOSITORY https://github.com/SanderMertens/flecs.git
+    GIT_TAG v4.0.5
+)
 
-FetchContent_MakeAvailable(raylib)
+FetchContent_MakeAvailable(raylib flecs)
 
 # Target Configuration
-set(SRC_FILES src/main.cpp)
+file(GLOB_RECURSE SRC_FILES "src/*.cpp")
 
 if(PLATFORM_ANDROID)
     find_library(native-app-glue-lib android_native_app_glue)
@@ -57,6 +61,7 @@ if(PLATFORM_ANDROID)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE
         raylib
+        flecs::flecs
         ${native-app-glue-lib}
         ${android-lib}
         ${log-lib}
@@ -71,7 +76,7 @@ if(PLATFORM_ANDROID)
     )
 else()
     add_executable(${PROJECT_NAME} ${SRC_FILES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+    target_link_libraries(${PROJECT_NAME} PRIVATE raylib flecs::flecs)
 endif()
 
 # Common Configuration
