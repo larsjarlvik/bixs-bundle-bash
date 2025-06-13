@@ -1,0 +1,35 @@
+plugins {
+    id 'com.android.application'
+}
+android {
+    namespace 'com.crappypay.bixsbundlebash'
+    ndkVersion "26.1.10909125"
+    compileSdk 34
+    defaultConfig {
+        applicationId "com.crappypay.bixsbundlebash"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path file('../../CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+}

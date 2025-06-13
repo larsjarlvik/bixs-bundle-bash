@@ -7,6 +7,12 @@
 /.cmake
 /CMakeCache.txt
 
+# Android
+.gradle/
+/android/app/.cxx
+/android/app/build
+/android/build
+
 # VS Code settings
 /.vscode/c_cpp_properties.json
 
