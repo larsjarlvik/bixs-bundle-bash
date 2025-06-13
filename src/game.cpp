@@ -6,6 +6,7 @@
 #include "world/components/render.h"
 #include "world/world.h"
 #include "game.h"
+#include "rlgl.h"
 
 #ifdef PLATFORM_ANDROID
     #define ASSET_PATH(path) path
@@ -25,6 +26,7 @@ auto GetRandomFloat(const float min, const float max) -> float {
 void init_game() {
     auto world = World::create_world();
 
+    rlSetClipPlanes(1.0, 100.0);
     world.ecs.set<WorldCamera>({
         .camera = Camera{
             .target = {0.0F, 0.0F, 0.0F},

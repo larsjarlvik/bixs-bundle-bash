@@ -7,8 +7,8 @@ int main() {
     SetConfigFlags(FLAG_VSYNC_HINT);
     InitWindow(0, 0, "Bix's Bundle Bash");
 #else
-    SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
-    InitWindow(800, 600,  "Bix's Bundle Bash");
+    SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
+    InitWindow(1280, 720,  "Bix's Bundle Bash");
 #endif
 
     init_game();
