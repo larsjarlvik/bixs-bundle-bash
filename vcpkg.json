@@ -1,9 +1,0 @@
-{
-    "name": "bixs-bundle-bash",
-    "version": "0.1.0",
-    "dependencies": [
-        "flecs",
-        "raylib",
-        "glfw3"
-    ]
-}

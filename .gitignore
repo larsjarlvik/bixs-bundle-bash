@@ -1,7 +1,6 @@
 # Builds and caches
 /build
 /.cache
-/vcpkg_installed
 
 # CMake files
 /CMakeUserPresets.json
