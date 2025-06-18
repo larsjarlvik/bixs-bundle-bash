@@ -34,7 +34,7 @@ void init_game() {
             .fovy = 45.0F,
             .projection = CAMERA_PERSPECTIVE,
         },
-        .distance = 5.0F
+        .distance = 3.0F
     });
 
     const auto shader = LoadShader(ASSET_PATH("shaders/world.vs"), ASSET_PATH("shaders/model.fs"));
@@ -58,6 +58,7 @@ void init_game() {
     }
 
     world.ecs.entity("Bix")
+        .add<CameraFollow>()
         .set<WorldModel>({
             .model = bix_model,
             .animations = animationMap,
@@ -76,7 +77,6 @@ void init_game() {
             .target = {0.0F, 0.0F, 0.0F},
             .speed = 0.05F
         });
-
 
     const auto banana_model = LoadModel(ASSET_PATH("models/banana.glb"));
     for (int i = 0; i < 10; ++i) {

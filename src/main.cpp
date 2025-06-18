@@ -1,6 +1,6 @@
 #include <raylib.h>
 #include "game.h"
-
+#define FLECS_SANITIZE
 int main() {
     // Platform-specific window setup
 #ifdef PLATFORM_ANDROID

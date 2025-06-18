@@ -8,6 +8,8 @@ struct WorldCamera {
     float distance;
 };
 
+struct CameraFollow {};
+
 struct WorldModel {
     Model model;
     std::map<std::string, ModelAnimation> animations;
