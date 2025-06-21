@@ -64,15 +64,10 @@ void init_game() {
             .animations { animationMap },
             .textured { true }
         })
-        .set<Animation>({
-            .name { "Idle" },
-            .frame_time { 0 },
-        })
-        .set<WorldTransform>({
-            .pos  {0.0F, 0.0F, 0.0F},
-            .yaw { 0.0F }
-        })
+        .set<Animation>({ .name { "Idle" } })
+        .set<WorldTransform>({})
         .set<WorldShader>(world_shader)
+        .set<Consumer>({ .range = 0.5F })
         .set<MoveTo>({
             .target {0.0F, 0.0F, 0.0F},
             .speed { 0.05F }
@@ -94,6 +89,7 @@ void init_game() {
                 .pos { GetRandomFloat(-5.0F, 5.0F), 2.0F, GetRandomFloat(-5.0F, 5.0F) },
                 .yaw { GetRandomFloat(0.0F, 360.0F) }
             })
+            .add<Consumable>()
             .set<WorldShader>(world_shader);
     }
 

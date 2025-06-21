@@ -16,3 +16,9 @@ struct Bounce {
     float elapsed {};
     float center_y {};
 };
+
+struct Consumer {
+    float range {};
+};
+
+struct Consumable {};

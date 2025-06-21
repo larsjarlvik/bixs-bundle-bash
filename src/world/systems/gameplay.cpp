@@ -2,6 +2,10 @@
 #include <raylib.h>
 #include <raymath.h>
 #include "world/components/gameplay.h"
+
+#include <iostream>
+#include <bits/ostream.tcc>
+
 #include "world/components/render.h"
 #include "world/world.h"
 
@@ -52,6 +56,23 @@ namespace gameplay_systems {
             bounce.elapsed += bounce.speed;
         }};
 
+        const auto eat_system { [&ecs = world.ecs](const Consumer &consumer, WorldTransform &transform, Animation &animation) {
+            ecs.each([&](const flecs::entity consumable_entity, Consumable, WorldTransform &consumable_transform) {
+                const float distance = Vector2Distance(
+                    { .x { transform.pos.x }, .y = { transform.pos.z} },
+                    { .x = { consumable_transform.pos.x }, .y = { consumable_transform.pos.z }
+                });
+
+                if (distance <= consumer.range) {
+                    consumable_entity.destruct();
+                    if (!animation.run_once.has_value()) {
+                        animation.run_once = "Eat";
+                        animation.frame_time = 0.0F;
+                    }
+                }
+            });
+        }};
+
         world.ecs.system<MoveTo>("move_target")
             .kind(world.fixed_phase)
             .run(move_target_system);
@@ -67,5 +88,9 @@ namespace gameplay_systems {
         world.ecs.system<Bounce, WorldTransform>("bounce")
             .kind(world.fixed_phase)
             .each(bounce_system);
+
+        world.ecs.system<Consumer, WorldTransform, Animation>("eat_system")
+            .kind(world.fixed_phase)
+            .each(eat_system);
     }
 }

@@ -3,8 +3,14 @@
 #include <flecs.h>
 #include <raymath.h>
 #include "world/components/render.h"
+
+#include <iostream>
+#include <bits/ostream.tcc>
+
 #include "world/world.h"
 #include "world/components/interpolation.h"
+
+constexpr float animation_speed { 240.0F };
 
 namespace render_systems {
     void register_systems(const World &world) {
@@ -40,16 +46,17 @@ namespace render_systems {
 
         // Animate models
         const auto animate_model { [](const flecs::iter& iter, size_t, WorldModel &model, Animation &anim) {
-            const auto animation { model.animations[anim.name] };
+            const auto animation { model.animations[anim.run_once.value_or(anim.name)] };
             anim.frame_time += iter.delta_time();
 
-            const float animation_duration { static_cast<float>(model.animations[anim.name].frameCount) / 60.0F };
+            const float animation_duration { static_cast<float>(model.animations[anim.name].frameCount) / animation_speed };
 
             while (anim.frame_time >= animation_duration) {
                 anim.frame_time -= animation_duration;
+                anim.run_once.reset();
             }
 
-            const auto current_frame { static_cast<int>(anim.frame_time * 240.0F) };
+            const auto current_frame { static_cast<int>(anim.frame_time * animation_speed) };
             UpdateModelAnimation(model.model, animation, current_frame);
         }};
 

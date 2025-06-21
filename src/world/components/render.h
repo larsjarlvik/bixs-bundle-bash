@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <optional>
 #include <raylib.h>
 #include <string>
 
@@ -18,6 +19,7 @@ struct WorldModel {
 
 struct Animation {
     std::string name;
+    std::optional<std::string> run_once;
     float frame_time {};
 };
 
