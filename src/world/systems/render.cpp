@@ -8,68 +8,75 @@
 
 namespace render_systems {
     void register_systems(const World &world) {
-        auto camera_follow = [&ecs = world.ecs](flecs::entity, const InterpolationState& state) {
-            auto *cam = ecs.get_mut<WorldCamera>();
+        // Follow an object with the camera
+        const auto camera_follow { [&ecs = world.ecs](flecs::entity, const InterpolationState& state) {
+            auto *cam { ecs.get_mut<WorldCamera>() };
             cam->camera.target = state.render_pos;
-        };
+        }};
 
-        auto update_camera = [&ecs = world.ecs](flecs::entity) {
-            auto *cam = ecs.get_mut<WorldCamera>();
+        // Update camera position based on camera target and distance
+        const auto update_camera { [&ecs = world.ecs](flecs::entity) {
+            auto *cam { ecs.get_mut<WorldCamera>() };
             cam->camera.position = Vector3Add(
                 cam->camera.target,
-                {cam->distance, cam->distance, cam->distance}
+                {cam->distance, cam->distance * 1.5F, cam->distance}
             );
-        };
+        }};
 
-        auto begin_render = [&ecs = world.ecs](flecs::iter) {
-            const auto *cam = ecs.get<WorldCamera>();
+        // Initiate rendering in raylib
+        const auto begin_render { [&ecs = world.ecs](flecs::iter) {
+            const auto *cam { ecs.get<WorldCamera>() };
             BeginMode3D(cam->camera);
-        };
+        }};
 
-        auto setup_lighting = [](flecs::entity, const WorldShader &shader) {
-            constexpr Vector3 light_dir = { -0.5F, -1.0F, -0.5F };
-            constexpr Vector3 light_color = { 0.4F, 0.4F, 0.4F };
+        // Setup lighting properties in shader
+        const auto setup_lighting { [](flecs::entity, const WorldShader &shader) {
+            constexpr Vector3 light_dir { -0.5F, -1.0F, -0.5F };
+            constexpr Vector3 light_color { 0.4F, 0.4F, 0.4F };
 
             SetShaderValue(shader.shader, shader.loc_light_dir, &light_dir, SHADER_UNIFORM_VEC3);
             SetShaderValue(shader.shader, shader.loc_light_color, &light_color, SHADER_UNIFORM_VEC3);
-        };
+        }};
 
-        auto animate_model = [](const flecs::iter& iter, size_t, WorldModel &model, Animation &anim) {
-            const auto animation = model.animations[anim.name];
+        // Animate models
+        const auto animate_model { [](const flecs::iter& iter, size_t, WorldModel &model, Animation &anim) {
+            const auto animation { model.animations[anim.name] };
             anim.frame_time += iter.delta_time();
 
-            const float animation_duration = static_cast<float>(model.animations[anim.name].frameCount) / 60.0F;
+            const float animation_duration { static_cast<float>(model.animations[anim.name].frameCount) / 60.0F };
 
             while (anim.frame_time >= animation_duration) {
                 anim.frame_time -= animation_duration;
             }
 
-            const auto current_frame = static_cast<int>(anim.frame_time * 240.0F);
+            const auto current_frame { static_cast<int>(anim.frame_time * 240.0F) };
             UpdateModelAnimation(model.model, animation, current_frame);
-        };
+        }};
 
-        auto render_model = [](const flecs::entity entity, WorldModel &model, const WorldShader &shader, const InterpolationState &state) {
-            const auto *cam = entity.world().get<WorldCamera>();
-            const auto shader_bool = static_cast<int>(model.textured);
+        // Render models
+        const auto render_model { [](const flecs::entity entity, WorldModel &model, const WorldShader &shader, const InterpolationState &state) {
+            const auto *cam { entity.world().get<WorldCamera>() };
+            const auto shader_bool { static_cast<int>(model.textured) };
             SetShaderValue(shader.shader, shader.loc_use_texture, &shader_bool, SHADER_UNIFORM_INT);
             SetShaderValue(shader.shader, shader.loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
 
-            for (int i = 0; i < model.model.materialCount; i++) {
+            for (int i { 0 }; i < model.model.materialCount; i++) {
                 model.model.materials[i].shader = shader.shader;
             }
 
-            const auto mat_rotation = QuaternionToMatrix(QuaternionFromAxisAngle((Vector3){ 0, 1, 0 }, DEG2RAD * state.render_yaw));
-            const auto mat_translation = MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z);
-            const auto mat_transform = MatrixMultiply(mat_rotation, mat_translation);
+            const auto mat_rotation { QuaternionToMatrix(QuaternionFromAxisAngle((Vector3){ 0, 1, 0 }, DEG2RAD * state.render_yaw)) };
+            const auto mat_translation { MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z) };
+            const auto mat_transform { MatrixMultiply(mat_rotation, mat_translation) };
 
             model.model.transform = mat_transform;
 
             DrawModel(model.model, {}, 1.0F, WHITE);
-        };
+        }};
 
-        auto end_render = [](flecs::iter) {
+        // End raylib render
+        const auto end_render { [](flecs::iter) {
             EndMode3D();
-        };
+        }};
 
         world.ecs.system<InterpolationState>("camera_follow")
             .kind(world.render_phase)

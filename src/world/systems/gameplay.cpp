@@ -7,27 +7,29 @@
 
 namespace gameplay_systems {
     void register_systems(const World &world) {
-        auto move_target_system = [](flecs::iter &iter) {
-            const auto should_move = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
-            const auto *cam = should_move ? iter.world().get_mut<WorldCamera>() : nullptr;
+        // Sets the MoveTo component to where the player clicks
+        const auto move_target_system { [](flecs::iter &iter) {
+            const auto should_move { IsMouseButtonDown(MOUSE_LEFT_BUTTON) };
+            const auto *cam { should_move ? iter.world().get_mut<WorldCamera>() : nullptr };
 
             while (iter.next()) {
                 if (should_move && cam != nullptr) {
-                    auto move_to = iter.field<MoveTo>(0);
-                    const auto [position, direction] = GetMouseRay(GetMousePosition(), cam->camera);
+                    auto move_to { iter.field<MoveTo>(0) };
+                    const auto [position, direction] { GetMouseRay(GetMousePosition(), cam->camera) };
 
                     for (const auto i : iter) {
-                        if (const auto target = -position.y / direction.y; target > 0.0F) {
+                        if (const auto target { -position.y / direction.y }; target > 0.0F) {
                             move_to[i].target = Vector3Add(position, Vector3Scale(direction, target));
                         }
                     }
                 }
             }
-        };
+        }};
 
-        auto move_to_system = [](const MoveTo &move_to, WorldTransform &transform, Animation &animation) {
-            const auto direction = Vector3Subtract(move_to.target, transform.pos);
-            const auto forward = Vector3Normalize(direction);
+        // Moves an animated entity with a transform towards MoveTo
+        const auto move_to_system { [](const MoveTo &move_to, WorldTransform &transform, Animation &animation) {
+            const auto direction { Vector3Subtract(move_to.target, transform.pos) };
+            const auto forward { Vector3Normalize(direction) };
 
             if (Vector3Length(direction) < move_to.speed) {
                 transform.pos = move_to.target;
@@ -37,16 +39,18 @@ namespace gameplay_systems {
                 transform.yaw = atan2f(forward.x, forward.z) * (180.0F / PI);
                 animation.name = "Run";
             }
-        };
+        }};
 
-        auto spin_system  = [](const Spin &spin, WorldTransform &transform) {
+        // Make an entity spin
+        const auto spin_system { [](const Spin &spin, WorldTransform &transform) {
             transform.yaw += spin.speed;
-        };
+        }};
 
-        auto bounce_system = [](Bounce &bounce, WorldTransform &transform) {
+        // Makes an entity bounce
+        const auto bounce_system { [](Bounce &bounce, WorldTransform &transform) {
             transform.pos.y = bounce.center_y +  sinf(bounce.elapsed) * bounce.height;
             bounce.elapsed += bounce.speed;
-        };
+        }};
 
         world.ecs.system<MoveTo>("move_target")
             .kind(world.fixed_phase)

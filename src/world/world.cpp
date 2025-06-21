@@ -6,32 +6,36 @@
 #include "world/systems/render.h"
 #include "world/systems/gameplay.h"
 
-constexpr float FIXED_DT = 1.0F / 60.0F;
+constexpr float FIXED_DT { 1.0F / 60.0F };
 
 auto World::create_world() -> World {
     const flecs::world ecs;
 
-    const auto fixed_phase = ecs.entity("fixed_phase");
-    const auto render_phase = ecs.entity("render_phase");
+    const auto fixed_phase { ecs.entity("fixed_phase") };
+    const auto render_phase { ecs.entity("render_phase") };
 
-    const auto fixed_pipeline = ecs.pipeline()
+    // Game loop pipeline with a fixed interval of 60 FPS
+    const auto fixed_pipeline { ecs.pipeline()
         .with(flecs::System)
         .with(fixed_phase)
-        .build();
+        .build()
+    };
 
-    const auto render_pipeline = ecs.pipeline()
+    // Render pipeline without fixed interval
+    const auto render_pipeline { ecs.pipeline()
         .with(flecs::System)
         .with(render_phase)
-        .build();
+        .build()
+    };
 
-    auto world = World {
+    auto world { World {
         .ecs = ecs,
         .fixed_pipeline = fixed_pipeline,
         .render_pipeline = render_pipeline,
         .fixed_phase = fixed_phase,
         .render_phase = render_phase,
         .accumulator = 0.0F,
-    };
+    }};
 
     interpolation_systems::register_systems(world);
     gameplay_systems::register_systems(world);
@@ -41,16 +45,15 @@ auto World::create_world() -> World {
 }
 
 auto World::update() -> void {
-
-    const float dt = GetFrameTime();
+    const float dt { GetFrameTime() };
     accumulator += dt;
+
     // ReSharper disable once CppDFALoopConditionNotUpdated
     while (accumulator >= FIXED_DT) {
         ecs.run_pipeline(fixed_pipeline, FIXED_DT);
-
         accumulator -= FIXED_DT;
     }
 
-    const float alpha = accumulator / FIXED_DT;
+    const float alpha { accumulator / FIXED_DT };
     ecs.run_pipeline(render_pipeline, alpha);
 }
