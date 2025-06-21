@@ -29,12 +29,12 @@ void init_game() {
     rlSetClipPlanes(1.0, 100.0);
     world.ecs.set<WorldCamera>({
         .camera = Camera{
-            .target = {0.0F, 0.0F, 0.0F},
-            .up = {0.0F, 1.0F, 0.0F},
-            .fovy = 45.0F,
+            .target {0.0F, 0.0F, 0.0F},
+            .up {0.0F, 1.0F, 0.0F},
+            .fovy  { 45.0F },
             .projection = CAMERA_PERSPECTIVE,
         },
-        .distance = 3.0F
+        .distance { 3.0F }
     });
 
     const auto shader = LoadShader(ASSET_PATH("shaders/world.vs"), ASSET_PATH("shaders/model.fs"));
@@ -47,48 +47,47 @@ void init_game() {
     };
 
     // Create character model
-    int bix_anim_count = 0;
+    int bix_anim_count { 0 };
 
     const auto bix_model = LoadModel(ASSET_PATH("models/bix.glb"));
     const auto* bix_animations = LoadModelAnimations(ASSET_PATH("models/bix.glb"), &bix_anim_count);
     std::map<std::string, ModelAnimation> animationMap;
 
-    for (int i = 0; i < bix_anim_count; i++) {
+    for (int i { 0 }; i < bix_anim_count; i++) {
         animationMap[bix_animations[i].name] = bix_animations[i];
     }
 
     world.ecs.entity("Bix")
         .add<CameraFollow>()
         .set<WorldModel>({
-            .model = bix_model,
-            .animations = animationMap,
-            .textured = true
+            .model { bix_model },
+            .animations { animationMap },
+            .textured { true }
         })
         .set<Animation>({
-            .name = "Idle",
-            .frame_time = 0,
+            .name { "Idle" },
+            .frame_time { 0 },
         })
         .set<WorldTransform>({
-            .pos = {0.0F, 0.0F, 0.0F},
-            .yaw = 0.0F
+            .pos  {0.0F, 0.0F, 0.0F},
+            .yaw { 0.0F }
         })
         .set<WorldShader>(world_shader)
         .set<MoveTo>({
-            .target = {0.0F, 0.0F, 0.0F},
-            .speed = 0.05F
+            .target {0.0F, 0.0F, 0.0F},
+            .speed { 0.05F }
         });
 
     const auto banana_model = LoadModel(ASSET_PATH("models/banana.glb"));
     for (int i = 0; i < 10; ++i) {
         // ReSharper disable once CppExpressionWithoutSideEffects
         world.ecs.entity()
-            .set<WorldModel>({
-                .model = banana_model,
-                .textured = false
-            })
+            .set<WorldModel>({ .model { banana_model } })
+            .set<Spin>({ .speed { 1.0F } })
+            .set<Bounce>({ .speed { 0.05F }, .height { 0.2F }, .elapsed { GetRandomFloat(-1.0F, 1.0F) } })
             .set<WorldTransform>({
-                .pos = { GetRandomFloat(-5.0F, 5.0F), 0.0F, GetRandomFloat(-5.0F, 5.0F) },
-                .yaw = 0.0
+                .pos { GetRandomFloat(-5.0F, 5.0F), 2.0F, GetRandomFloat(-5.0F, 5.0F) },
+                .yaw { GetRandomFloat(0.0F, 360.0F) }
             })
             .set<WorldShader>(world_shader);
     }

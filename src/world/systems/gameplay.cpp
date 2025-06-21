@@ -7,7 +7,7 @@
 
 namespace gameplay_systems {
     void register_systems(const World &world) {
-        auto move_target = [](flecs::iter &iter) {
+        auto move_target_system = [](flecs::iter &iter) {
             const auto should_move = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
             const auto *cam = should_move ? iter.world().get_mut<WorldCamera>() : nullptr;
 
@@ -25,7 +25,7 @@ namespace gameplay_systems {
             }
         };
 
-        auto move_to = [](const MoveTo &move_to, WorldTransform &transform, Animation &animation) {
+        auto move_to_system = [](const MoveTo &move_to, WorldTransform &transform, Animation &animation) {
             const auto direction = Vector3Subtract(move_to.target, transform.pos);
             const auto forward = Vector3Normalize(direction);
 
@@ -39,12 +39,29 @@ namespace gameplay_systems {
             }
         };
 
+        auto spin_system  = [](const Spin &spin, WorldTransform &transform) {
+            transform.yaw += spin.speed;
+        };
+
+        auto bounce_system = [](Bounce &bounce, WorldTransform &transform) {
+            transform.pos.y = bounce.center_y +  sinf(bounce.elapsed) * bounce.height;
+            bounce.elapsed += bounce.speed;
+        };
+
         world.ecs.system<MoveTo>("move_target")
             .kind(world.fixed_phase)
-            .run(move_target);
+            .run(move_target_system);
 
         world.ecs.system<MoveTo, WorldTransform, Animation>("move_to")
             .kind(world.fixed_phase)
-            .each(move_to);
+            .each(move_to_system);
+
+        world.ecs.system<Spin, WorldTransform>("spin")
+            .kind(world.fixed_phase)
+            .each(spin_system);
+
+        world.ecs.system<Bounce, WorldTransform>("bounce")
+            .kind(world.fixed_phase)
+            .each(bounce_system);
     }
 }

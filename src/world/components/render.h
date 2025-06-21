@@ -4,31 +4,31 @@
 #include <string>
 
 struct WorldCamera {
-    Camera camera;
-    float distance;
+    Camera camera {};
+    float distance {};
 };
 
 struct CameraFollow {};
 
 struct WorldModel {
-    Model model;
     std::map<std::string, ModelAnimation> animations;
-    bool textured;
+    Model model {};
+    bool textured { false };
 };
 
 struct Animation {
     std::string name;
-    float frame_time;
+    float frame_time {};
 };
 
 struct WorldTransform {
-    Vector3 pos;
-    float yaw;
+    Vector3 pos { 0.0F, 0.0F, 0.0F };
+    float yaw {};
 };
 
 struct PrevWorldTransform {
-    Vector3 pos;
-    float yaw;
+    Vector3 pos { 0.0F, 0.0F, 0.0F };
+    float yaw {};
 };
 
 struct WorldShader {
