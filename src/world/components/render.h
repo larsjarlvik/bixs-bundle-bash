@@ -25,12 +25,12 @@ struct Animation {
 
 struct WorldTransform {
     Vector3 pos { 0.0F, 0.0F, 0.0F };
-    float yaw {};
+    Vector3 rot { 0.0F, 0.0F, 0.0F };
 };
 
 struct PrevWorldTransform {
     Vector3 pos { 0.0F, 0.0F, 0.0F };
-    float yaw {};
+    Vector3 rot { 0.0F, 0.0F, 0.0F };
 };
 
 struct WorldShader {

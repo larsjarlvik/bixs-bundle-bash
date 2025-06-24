@@ -3,12 +3,12 @@
 #include <flecs.h>
 #include <raymath.h>
 #include "world/components/render.h"
-
 #include <iostream>
-#include <bits/ostream.tcc>
 
+#include "rlgl.h"
 #include "world/world.h"
 #include "world/components/interpolation.h"
+#include "world/components/particle.h"
 
 constexpr float animation_speed { 240.0F };
 
@@ -21,8 +21,13 @@ namespace render_systems {
         }};
 
         // Update camera position based on camera target and distance
-        const auto update_camera { [&ecs = world.ecs](flecs::entity) {
+        const auto update_camera { [&ecs = world.ecs](const flecs::entity entity) {
             auto *cam { ecs.get_mut<WorldCamera>() };
+            const auto *world_shader { entity.world().get<WorldShader>() };
+            const auto *particle_shader { entity.world().get<WorldShader>() };
+
+            SetShaderValue(world_shader->shader, world_shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
+            SetShaderValue(particle_shader->shader, particle_shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
             cam->camera.position = Vector3Add(
                 cam->camera.target,
                 {cam->distance, cam->distance * 1.5F, cam->distance}
@@ -61,17 +66,17 @@ namespace render_systems {
         }};
 
         // Render models
-        const auto render_model { [](const flecs::entity entity, WorldModel &model, const WorldShader &shader, const InterpolationState &state) {
-            const auto *cam { entity.world().get<WorldCamera>() };
+        const auto render_model { [](const flecs::entity entity, WorldModel &model, const InterpolationState &state) {
+            const auto *shader { entity.world().get<WorldShader>() };
+
             const auto shader_bool { static_cast<int>(model.textured) };
-            SetShaderValue(shader.shader, shader.loc_use_texture, &shader_bool, SHADER_UNIFORM_INT);
-            SetShaderValue(shader.shader, shader.loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_use_texture, &shader_bool, SHADER_UNIFORM_INT);
 
             for (int i { 0 }; i < model.model.materialCount; i++) {
-                model.model.materials[i].shader = shader.shader;
+                model.model.materials[i].shader = shader->shader;
             }
 
-            const auto mat_rotation { QuaternionToMatrix(QuaternionFromAxisAngle((Vector3){ 0, 1, 0 }, DEG2RAD * state.render_yaw)) };
+            const auto mat_rotation { QuaternionToMatrix(state.render_rot) };
             const auto mat_translation { MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z) };
             const auto mat_transform { MatrixMultiply(mat_rotation, mat_translation) };
 
@@ -79,6 +84,38 @@ namespace render_systems {
 
             DrawModel(model.model, {}, 1.0F, WHITE);
         }};
+
+        // Render particles
+        const auto render_particle = [](flecs::iter& iter) {
+            const auto* shader = iter.world().get<WorldShader>();
+
+            BeginShaderMode(shader->shader);
+
+            const auto query { iter.world().query<Particle, InterpolationState>() };
+            query.each([](const Particle& particle, const InterpolationState& state) {
+                const auto particle_size { 0.1F * particle.lifetime };
+                // Convert euler to rotation matrix (more efficient for complex rotations)
+                Matrix rotation_matrix = MatrixRotateXYZ({
+                    state.render_rot.x, // Convert to radians if needed
+                    state.render_rot.y,
+                    state.render_rot.z,
+                });
+
+                Matrix translation = MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z);
+                Matrix scale = MatrixScale(particle_size, particle_size, particle_size);
+
+                // Combine: Scale -> Rotate -> Translate
+                Matrix transform = MatrixMultiply(scale, rotation_matrix);
+                transform = MatrixMultiply(transform, translation);
+
+                rlPushMatrix();
+                rlMultMatrixf(MatrixToFloat(transform));
+                DrawCube({0, 0, 0}, 1.0f, 1.0f, 1.0f, particle.color);
+                rlPopMatrix();
+            });
+
+            EndShaderMode();
+        };
 
         // End raylib render
         const auto end_render { [](flecs::iter) {
@@ -107,9 +144,13 @@ namespace render_systems {
             .kind(world.fixed_phase)
             .each(animate_model);
 
-        world.ecs.system<WorldModel, WorldShader, InterpolationState>("render_model")
+        world.ecs.system<WorldModel, InterpolationState>("render_model")
             .kind(world.render_phase)
             .each(render_model);
+
+        world.ecs.system("render_particle")
+            .kind(world.render_phase)
+            .run(render_particle);
 
         world.ecs.system("end_render")
             .kind(world.render_phase)

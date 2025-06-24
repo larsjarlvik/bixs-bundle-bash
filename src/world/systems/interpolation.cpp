@@ -11,7 +11,7 @@ namespace interpolation_systems {
         const auto store_previous { [](const flecs::entity entity, const WorldTransform &transform) {
             auto& state { entity.ensure<InterpolationState>() };
             state.prev_pos = transform.pos;
-            state.prev_yaw = transform.yaw;
+            state.prev_rot = transform.rot;
         }};
 
         // Sets the interpolated value between game loop steps for rendering
@@ -19,7 +19,10 @@ namespace interpolation_systems {
             const float alpha { iter.delta_time() };
 
             state.render_pos = Vector3Lerp(state.prev_pos, transform.pos, alpha);
-            state.render_yaw = Lerp(state.prev_yaw, transform.yaw, alpha);
+            state.render_rot = QuaternionSlerp(
+                QuaternionFromEuler( state.prev_rot.x * DEG2RAD, state.prev_rot.y * DEG2RAD, state.prev_rot.z* DEG2RAD),
+                QuaternionFromEuler(transform.rot.x * DEG2RAD, transform.rot.y * DEG2RAD, transform.rot.z* DEG2RAD),
+                alpha);
         }};
 
         world.ecs.system<WorldTransform>("store_previous")

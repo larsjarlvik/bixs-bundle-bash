@@ -2,11 +2,10 @@
 #include <raylib.h>
 #include "world/world.h"
 
+#include "world/systems/particle.h"
 #include "world/systems/interpolation.h"
 #include "world/systems/render.h"
 #include "world/systems/gameplay.h"
-
-constexpr float FIXED_DT { 1.0F / 60.0F };
 
 auto World::create_world() -> World {
     const flecs::world ecs;
@@ -40,6 +39,7 @@ auto World::create_world() -> World {
     interpolation_systems::register_systems(world);
     gameplay_systems::register_systems(world);
     render_systems::register_systems(world);
+    particle_systems::register_systems(world);
 
     return world;
 }

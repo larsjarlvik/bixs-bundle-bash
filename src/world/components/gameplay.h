@@ -1,5 +1,6 @@
 #pragma once
 #include <raylib.h>
+#include <vector>
 
 struct MoveTo {
     Vector3 target { 0.0F, 0.0F, 0.0F };
@@ -21,4 +22,7 @@ struct Consumer {
     float range {};
 };
 
-struct Consumable {};
+struct Consumable {
+    std::vector<Color> colors;
+    int particles { 25 };
+};

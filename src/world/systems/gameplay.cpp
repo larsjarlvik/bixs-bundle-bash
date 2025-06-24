@@ -1,12 +1,11 @@
 #include <flecs.h>
 #include <raylib.h>
 #include <raymath.h>
-#include "world/components/gameplay.h"
-
 #include <iostream>
-#include <bits/ostream.tcc>
 
+#include "world/components/gameplay.h"
 #include "world/components/render.h"
+#include "world/components/particle.h"
 #include "world/world.h"
 
 namespace gameplay_systems {
@@ -40,14 +39,14 @@ namespace gameplay_systems {
                 animation.name = "Idle";
             } else {
                 transform.pos = Vector3Add(transform.pos, Vector3Scale(forward, move_to.speed));
-                transform.yaw = atan2f(forward.x, forward.z) * (180.0F / PI);
+                transform.rot.y = atan2f(forward.x, forward.z) * (180.0F / PI);
                 animation.name = "Run";
             }
         }};
 
         // Make an entity spin
         const auto spin_system { [](const Spin &spin, WorldTransform &transform) {
-            transform.yaw += spin.speed;
+            transform.rot.y += spin.speed;
         }};
 
         // Makes an entity bounce
@@ -56,15 +55,22 @@ namespace gameplay_systems {
             bounce.elapsed += bounce.speed;
         }};
 
-        const auto eat_system { [&ecs = world.ecs](const Consumer &consumer, WorldTransform &transform, Animation &animation) {
-            ecs.each([&](const flecs::entity consumable_entity, Consumable, WorldTransform &consumable_transform) {
+        const auto eat_system { [&ecs = world.ecs](const Consumer &consumer, const WorldTransform &transform, Animation &animation) {
+            ecs.each([&](const flecs::entity consumable_entity, const Consumable &consumable, const WorldTransform &consumable_transform) {
                 const float distance = Vector2Distance(
-                    { .x { transform.pos.x }, .y = { transform.pos.z} },
-                    { .x = { consumable_transform.pos.x }, .y = { consumable_transform.pos.z }
+                    { .x = transform.pos.x, .y = transform.pos.z },
+                    { .x = consumable_transform.pos.x, .y = consumable_transform.pos.z
                 });
 
                 if (distance <= consumer.range) {
                     consumable_entity.destruct();
+                    ecs.entity()
+                        .set<WorldTransform>(consumable_transform)
+                        .set<Explosion>({
+                            .colors = consumable.colors,
+                            .particles = consumable.particles,
+                        });
+
                     if (!animation.run_once.has_value()) {
                         animation.run_once = "Eat";
                         animation.frame_time = 0.0F;
