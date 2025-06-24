@@ -51,17 +51,21 @@ namespace render_systems {
 
         // Animate models
         const auto animate_model { [](const flecs::iter& iter, size_t, WorldModel &model, Animation &anim) {
-            const auto animation { model.animations[anim.run_once.value_or(anim.name)] };
+            const auto& animation = model.animations[anim.run_once.value_or(anim.name)];
             anim.frame_time += iter.delta_time();
 
-            const float animation_duration { static_cast<float>(model.animations[anim.name].frameCount) / animation_speed };
+            const auto current_frame = static_cast<int>(anim.frame_time * animation_speed);
 
-            while (anim.frame_time >= animation_duration) {
-                anim.frame_time -= animation_duration;
-                anim.run_once.reset();
+            if (current_frame >= animation.frameCount) {
+                if (anim.run_once.has_value()) {
+                    anim.run_once.reset();
+                    anim.frame_time = 0.0f;
+                    return;
+                }
+
+                anim.frame_time = std::fmod(anim.frame_time, static_cast<float>(animation.frameCount) / animation_speed);
             }
 
-            const auto current_frame { static_cast<int>(anim.frame_time * animation_speed) };
             UpdateModelAnimation(model.model, animation, current_frame);
         }};
 

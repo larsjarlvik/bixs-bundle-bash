@@ -62,7 +62,7 @@ namespace gameplay_systems {
                     { .x = consumable_transform.pos.x, .y = consumable_transform.pos.z
                 });
 
-                if (distance <= consumer.range) {
+                if (distance <= consumer.range && !animation.run_once.has_value()) {
                     consumable_entity.destruct();
                     ecs.entity()
                         .set<WorldTransform>(consumable_transform)
@@ -71,10 +71,8 @@ namespace gameplay_systems {
                             .particles = consumable.particles,
                         });
 
-                    if (!animation.run_once.has_value()) {
-                        animation.run_once = "Eat";
-                        animation.frame_time = 0.0F;
-                    }
+                    animation.run_once = "Eat";
+                    animation.frame_time = 0.0F;
                 }
             });
         }};
