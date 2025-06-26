@@ -68,9 +68,38 @@ void init_game() {
         });
 
     const auto banana_model { LoadModel(ASSET_PATH("models/banana.glb")) };
+    const auto banana_colors = std::vector<Color>{
+        {255, 235, 59, 255},   // Bright banana yellow
+        {255, 180, 15, 255},   // Vibrant orange-gold
+        {240, 220, 80, 255},   // Creamy yellow
+        {180, 140, 35, 255},   // Rich golden brown
+        {100, 160, 60, 255},   // Banana leaf green
+        {130, 80, 40, 255},    // Dark brown (stem/spots)
+    };
+
+
+
+
+    const auto apple_model { LoadModel(ASSET_PATH("models/apple.glb")) };
+    const auto apple_colors = std::vector<Color>{
+        {220, 50, 47, 255},    // Deep red (main body)
+        {255, 80, 70, 255},    // Bright red (highlights)
+        {180, 35, 30, 255},    // Dark red (shadows)
+        {255, 140, 60, 255},   // Orange-red (gradient area)
+        {255, 200, 80, 255},   // Golden yellow (bottom gradient)
+        {101, 67, 33, 255}     // Brown (stem)
+    };
+
+
+    Mesh planeMesh = GenMeshPlane(200.0f, 200.0f, 1, 1);
+    Model planeModel = LoadModelFromMesh(planeMesh);
+    planeModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = RED;
+
     for (int i { 0 }; i < 300; ++i) {
+        const auto banana = util::GetRandomInt(0, 1) == 1;
+
         world.ecs.entity()
-            .set<WorldModel>({ .model { banana_model } })
+            .set<WorldModel>({ .model { banana ? banana_model : apple_model } })
             .set<Spin>({ .speed { 1.0F } })
             .set<Bounce>({
                 .speed { 0.05F },
@@ -83,14 +112,7 @@ void init_game() {
                 .rot { 0.0F, util::GetRandomFloat(0.0F, 360.0F), 0.0F }
             })
             .set<Consumable>({
-                .colors = {
-                    {255, 235, 59, 255},   // Bright banana yellow
-                    {255, 180, 15, 255},   // Vibrant orange-gold
-                    {240, 220, 80, 255},   // Creamy yellow
-                    {180, 140, 35, 255},   // Rich golden brown
-                    {100, 160, 60, 255},   // Banana leaf green
-                    {130, 80, 40, 255},    // Dark brown (stem/spots)
-                },
+                .colors = banana ? banana_colors : apple_colors ,
                 .particles = 25,
             });
     }
