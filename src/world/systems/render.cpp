@@ -3,6 +3,8 @@
 #include <flecs.h>
 #include <raymath.h>
 #include "world/components/render.h"
+
+#include <algorithm>
 #include <iostream>
 
 #include "rlgl.h"
@@ -11,6 +13,9 @@
 #include "world/components/particle.h"
 
 constexpr float animation_speed { 240.0F };
+
+constexpr Vector3 light_dir { -0.5F, -1.0F, -0.5F };
+constexpr Vector3 light_color { 0.4F, 0.4F, 0.4F };
 
 namespace render_systems {
     void register_systems(const World &world) {
@@ -23,11 +28,9 @@ namespace render_systems {
         // Update camera position based on camera target and distance
         const auto update_camera { [&ecs = world.ecs](const flecs::entity entity) {
             auto *cam { ecs.get_mut<WorldCamera>() };
-            const auto *world_shader { entity.world().get<WorldShader>() };
-            const auto *particle_shader { entity.world().get<WorldShader>() };
+            const auto *shader { entity.world().get<ModelShader>() };
 
-            SetShaderValue(world_shader->shader, world_shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
-            SetShaderValue(particle_shader->shader, particle_shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
             cam->camera.position = Vector3Add(
                 cam->camera.target,
                 {cam->distance, cam->distance * 1.5F, cam->distance}
@@ -41,9 +44,7 @@ namespace render_systems {
         }};
 
         // Setup lighting properties in shader
-        const auto setup_lighting { [](flecs::entity, const WorldShader &shader) {
-            constexpr Vector3 light_dir { -0.5F, -1.0F, -0.5F };
-            constexpr Vector3 light_color { 0.4F, 0.4F, 0.4F };
+        const auto setup_lighting { [](flecs::entity, const ModelShader &shader) {
 
             SetShaderValue(shader.shader, shader.loc_light_dir, &light_dir, SHADER_UNIFORM_VEC3);
             SetShaderValue(shader.shader, shader.loc_light_color, &light_color, SHADER_UNIFORM_VEC3);
@@ -70,47 +71,52 @@ namespace render_systems {
         }};
 
         // Render models
-        const auto render_model { [](const flecs::entity entity, WorldModel &model, const InterpolationState &state) {
-            const auto *shader { entity.world().get<WorldShader>() };
+        const auto render_model { [](const flecs::iter& iter) {
+            const auto* shader = iter.world().get<ModelShader>();
+            BeginShaderMode(shader->shader);
 
-            const auto shader_bool { static_cast<int>(model.textured) };
-            SetShaderValue(shader->shader, shader->loc_use_texture, &shader_bool, SHADER_UNIFORM_INT);
+            const auto query { iter.world().query<WorldModel, InterpolationState>() };
 
-            for (int i { 0 }; i < model.model.materialCount; i++) {
-                model.model.materials[i].shader = shader->shader;
-            }
+            query.each([shader](WorldModel &model, const InterpolationState &state) {
+                const auto shader_bool { static_cast<int>(model.textured) };
+                SetShaderValue(shader->shader, shader->loc_use_texture, &shader_bool, SHADER_UNIFORM_INT);
 
-            const auto mat_rotation { QuaternionToMatrix(state.render_rot) };
-            const auto mat_translation { MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z) };
-            const auto mat_transform { MatrixMultiply(mat_rotation, mat_translation) };
+                for (int i { 0 }; i < model.model.materialCount; i++) {
+                    model.model.materials[i].shader = shader->shader;
+                }
 
-            model.model.transform = mat_transform;
+                const auto mat_rotation { QuaternionToMatrix(state.render_rot) };
+                const auto mat_translation { MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z) };
+                const auto mat_transform { MatrixMultiply(mat_rotation, mat_translation) };
 
-            DrawModel(model.model, {}, 1.0F, WHITE);
+                model.model.transform = mat_transform;
+
+                DrawModel(model.model, {}, 1.0F, WHITE);
+            });
+
+            EndShaderMode();
         }};
 
         // Render particles
-        const auto render_particle = [](flecs::iter& iter) {
-            const auto* shader = iter.world().get<WorldShader>();
-
+        const auto render_particle = [](const flecs::iter& iter) {
+            const auto* shader = iter.world().get<ModelShader>();
             BeginShaderMode(shader->shader);
 
             const auto query { iter.world().query<Particle, InterpolationState>() };
             query.each([](const Particle& particle, const InterpolationState& state) {
                 const auto particle_size { 0.1F * particle.lifetime };
                 // Convert euler to rotation matrix (more efficient for complex rotations)
-                Matrix rotation_matrix = MatrixRotateXYZ({
+                const auto rotation_matrix { MatrixRotateXYZ({
                     state.render_rot.x, // Convert to radians if needed
                     state.render_rot.y,
                     state.render_rot.z,
-                });
+                })};
 
-                Matrix translation = MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z);
-                Matrix scale = MatrixScale(particle_size, particle_size, particle_size);
+                const auto translation { MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z) };
+                const Matrix scale { MatrixScale(particle_size, particle_size, particle_size) };
 
                 // Combine: Scale -> Rotate -> Translate
-                Matrix transform = MatrixMultiply(scale, rotation_matrix);
-                transform = MatrixMultiply(transform, translation);
+                const auto transform { MatrixMultiply(MatrixMultiply(scale, rotation_matrix), translation) };
 
                 rlPushMatrix();
                 rlMultMatrixf(MatrixToFloat(transform));
@@ -118,6 +124,43 @@ namespace render_systems {
                 rlPopMatrix();
             });
 
+            EndShaderMode();
+        };
+
+        const auto render_ground = [](const flecs::iter& iter) {
+            const auto* shader = iter.world().get<GroundShader>();
+            const auto* ground = iter.world().get<WorldGround>();
+            const auto *cam { iter.world().get<WorldCamera>() };
+
+            std::vector<Vector3> positions;
+            std::vector<float> radii;
+
+            const auto query { iter.world().query<ShadowCaster, InterpolationState>() };
+            query.each([&positions, &radii](const ShadowCaster& caster, const InterpolationState& state) {
+                const auto t { -state.render_pos.y / light_dir.y };
+                positions.push_back((Vector3){
+                    .x = state.render_pos.x + light_dir.x * t,
+                    .y = 0.0F,
+                    .z = state.render_pos.z + light_dir.z * t
+                });
+
+                radii.push_back(caster.radius);
+            });
+
+            // Prioritize shadows closer to the camera target
+            std::sort(positions.begin(), positions.end(), [&cam](const Vector3 &a, const Vector3 &b) {
+                return Vector3Distance(cam->camera.target, a) < Vector3Distance(cam->camera.target, b);
+            });
+
+            const auto shadow_count = static_cast<int>(std::min(positions.size(), static_cast<size_t>(64)));
+
+            BeginShaderMode(shader->shader);
+            SetShaderValue(shader->shader, shader->loc_ground_size, &ground->size, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(shader->shader, shader->loc_shadow_count, &shadow_count, SHADER_UNIFORM_INT);
+            SetShaderValueV(shader->shader, shader->loc_shadow_positions, positions.data(), SHADER_UNIFORM_VEC3, shadow_count);
+            SetShaderValueV(shader->shader, shader->loc_shadow_radii,radii.data(), SHADER_UNIFORM_FLOAT, shadow_count);
+
+            DrawModel(ground->model, Vector3Zero(), 1.0F, WHITE);
             EndShaderMode();
         };
 
@@ -140,7 +183,7 @@ namespace render_systems {
             .kind(world.render_phase)
             .run(begin_render);
 
-        world.ecs.system<WorldShader>("setup_lighting")
+        world.ecs.system<ModelShader>("setup_lighting")
             .kind(world.render_phase)
             .each(setup_lighting);
 
@@ -148,13 +191,17 @@ namespace render_systems {
             .kind(world.fixed_phase)
             .each(animate_model);
 
-        world.ecs.system<WorldModel, InterpolationState>("render_model")
+        world.ecs.system("render_model")
             .kind(world.render_phase)
-            .each(render_model);
+            .run(render_model);
 
         world.ecs.system("render_particle")
             .kind(world.render_phase)
             .run(render_particle);
+
+        world.ecs.system("render_ground")
+            .kind(world.render_phase)
+            .run(render_ground);
 
         world.ecs.system("end_render")
             .kind(world.render_phase)

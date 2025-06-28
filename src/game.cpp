@@ -31,9 +31,24 @@ void init_game() {
         .distance { 3.0F }
     });
 
+    // Create ground
+    const auto ground_shader { LoadShader(ASSET_PATH("shaders/ground.vs"), ASSET_PATH("shaders/ground.fs")) };
+    world.ecs.set<GroundShader>({
+        .shader { ground_shader },
+        .loc_ground_size { GetShaderLocation(ground_shader, "groundSize") },
+        .loc_shadow_count { GetShaderLocation(ground_shader, "shadowCount") },
+        .loc_shadow_positions { GetShaderLocation(ground_shader, "shadowPositions") },
+        .loc_shadow_radii { GetShaderLocation(ground_shader, "shadowRadii") },
+    });
 
-    const auto shader { LoadShader(ASSET_PATH("shaders/world.vs"), ASSET_PATH("shaders/model.fs")) };
-    world.ecs.set<WorldShader>({
+    auto ground_size = 50.0F;
+    auto ground_model { LoadModelFromMesh(GenMeshPlane(ground_size, ground_size, 1, 1)) };
+    ground_model.materials[0].shader = ground_shader;
+    world.ecs.set<WorldGround>({ .model { ground_model }, .size = ground_size });
+
+    // Setup model shader
+    const auto shader { LoadShader(ASSET_PATH("shaders/model.vs"), ASSET_PATH("shaders/model.fs")) };
+    world.ecs.set<ModelShader>({
         .shader { shader },
         .loc_light_dir { GetShaderLocation(shader, "lightDir") },
         .loc_light_color { GetShaderLocation(shader, "lightColor") },
@@ -62,6 +77,7 @@ void init_game() {
         .set<Animation>({ .name { "Idle" } })
         .set<WorldTransform>({})
         .set<Consumer>({ .range = 0.5F })
+        .set<ShadowCaster>({ .radius = 0.6F })
         .set<MoveTo>({
             .target {0.0F, 0.0F, 0.0F},
             .speed { 0.05F }
@@ -77,9 +93,6 @@ void init_game() {
         {130, 80, 40, 255},    // Dark brown (stem/spots)
     };
 
-
-
-
     const auto apple_model { LoadModel(ASSET_PATH("models/apple.glb")) };
     const auto apple_colors = std::vector<Color>{
         {220, 50, 47, 255},    // Deep red (main body)
@@ -90,12 +103,7 @@ void init_game() {
         {101, 67, 33, 255}     // Brown (stem)
     };
 
-
-    Mesh planeMesh = GenMeshPlane(200.0f, 200.0f, 1, 1);
-    Model planeModel = LoadModelFromMesh(planeMesh);
-    planeModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = RED;
-
-    for (int i { 0 }; i < 300; ++i) {
+    for (int i { 0 }; i < 200; ++i) {
         const auto banana = util::GetRandomInt(0, 1) == 1;
 
         world.ecs.entity()
@@ -107,6 +115,7 @@ void init_game() {
                 .center_y { 1.0F },
                 .elapsed { util::GetRandomFloat(-1.0F, 1.0F) }
             })
+            .set<ShadowCaster>({ .radius = 0.4F })
             .set<WorldTransform>({
                 .pos { util::GetRandomFloat(-15.0F, 15.0F), 2.0F, util::GetRandomFloat(-15.0F, 15.0F) },
                 .rot { 0.0F, util::GetRandomFloat(0.0F, 360.0F), 0.0F }
@@ -128,6 +137,8 @@ void init_game() {
 
     UnloadModel(bix_model);
     UnloadModel(banana_model);
+    UnloadModel(apple_model);
     UnloadShader(shader);
+    UnloadShader(ground_shader);
     CloseWindow();
 }
