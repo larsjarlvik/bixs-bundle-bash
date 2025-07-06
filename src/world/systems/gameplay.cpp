@@ -21,7 +21,7 @@ namespace gameplay_systems {
                     const auto [position, direction] { GetMouseRay(GetMousePosition(), cam->camera) };
 
                     for (const auto i : iter) {
-                        if (const auto target { -position.y / direction.y }; target > 0.0F) {
+                        if (const auto target { -position.y / direction.y }; target > 0.0f) {
                             move_to[i].target = Vector3Add(position, Vector3Scale(direction, target));
                         }
                     }
@@ -39,7 +39,7 @@ namespace gameplay_systems {
                 animation.name = "Idle";
             } else {
                 transform.pos = Vector3Add(transform.pos, Vector3Scale(forward, move_to.speed));
-                transform.rot.y = atan2f(forward.x, forward.z) * (180.0F / PI);
+                transform.rot.y = atan2f(forward.x, forward.z) * (180.0f / PI);
                 animation.name = "Run";
             }
         }};
@@ -67,12 +67,12 @@ namespace gameplay_systems {
                     ecs.entity()
                         .set<WorldTransform>(consumable_transform)
                         .set<Explosion>({
-                            .colors = consumable.colors,
-                            .particles = consumable.particles,
+                            .particles { consumable.particles },
+                            .colors { consumable.colors },
                         });
 
                     animation.run_once = "Eat";
-                    animation.frame_time = 0.0F;
+                    animation.frame_time = 0.0f;
                 }
             });
         }};

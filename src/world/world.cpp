@@ -33,7 +33,7 @@ auto World::create_world() -> World {
         .render_pipeline = render_pipeline,
         .fixed_phase = fixed_phase,
         .render_phase = render_phase,
-        .accumulator = 0.0F,
+        .accumulator = 0.0f,
     }};
 
     interpolation_systems::register_systems(world);

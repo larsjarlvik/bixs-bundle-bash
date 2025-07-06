@@ -3,7 +3,7 @@
 #include <vector>
 
 struct MoveTo {
-    Vector3 target { 0.0F, 0.0F, 0.0F };
+    Vector3 target { 0.0f, 0.0f, 0.0f };
     float speed {};
 };
 

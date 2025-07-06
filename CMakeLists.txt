@@ -30,10 +30,12 @@ include(FetchContent)
 FetchContent_Declare(raylib
     GIT_REPOSITORY https://github.com/raysan5/raylib.git
     GIT_TAG 5.5
+    SYSTEM
 )
 FetchContent_Declare(flecs
     GIT_REPOSITORY https://github.com/SanderMertens/flecs.git
     GIT_TAG v4.0.5
+    SYSTEM
 )
 
 FetchContent_MakeAvailable(raylib flecs)
@@ -78,6 +80,8 @@ else()
     add_executable(${PROJECT_NAME} ${SRC_FILES})
     target_link_libraries(${PROJECT_NAME} PRIVATE raylib flecs::flecs)
 endif()
+
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-braced-scalar-init -Wextra -Werror)
 
 # Common Configuration
 target_include_directories(${PROJECT_NAME} PRIVATE src)

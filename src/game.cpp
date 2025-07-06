@@ -23,12 +23,13 @@ void init_game() {
     rlSetClipPlanes(1.0, 100.0);
     world.ecs.set<WorldCamera>({
         .camera { Camera {
-            .target {0.0F, 0.0F, 0.0F},
-            .up {0.0F, 1.0F, 0.0F},
-            .fovy  { 45.0F },
-            .projection { CAMERA_PERSPECTIVE },
+            .position { 0.0f, 0.0f, 0.0f },
+            .target {0.0f, 0.0f, 0.0f},
+            .up {0.0f, 1.0f, 0.0f},
+            .fovy = 45.0f,
+            .projection = CAMERA_PERSPECTIVE,
         }},
-        .distance { 3.0F }
+        .distance = 3.0f
     });
 
     // Create ground
@@ -42,7 +43,7 @@ void init_game() {
         .loc_shadow_itensities { GetShaderLocation(ground_shader, "shadowIntensities")}
     });
 
-    auto ground_size = 50.0F;
+    auto ground_size = 50.0f;
     auto ground_model { LoadModelFromMesh(GenMeshPlane(ground_size, ground_size, 1, 1)) };
     ground_model.materials[0].shader = ground_shader;
     world.ecs.set<WorldGround>({ .model { ground_model }, .size = ground_size });
@@ -71,17 +72,19 @@ void init_game() {
     world.ecs.entity("Bix")
         .add<CameraFollow>()
         .set<WorldModel>({
-            .model { bix_model },
             .animations { animationMap },
+            .model { bix_model },
             .textured { true }
         })
-        .set<Animation>({ .name { "Idle" } })
+        .set<Animation>({
+            .name { "Idle" },
+        })
         .set<WorldTransform>({})
-        .set<Consumer>({ .range = 0.5F })
+        .set<Consumer>({ .range = 0.5f })
         .set<ShadowCaster>({ .radius = 0.4F })
         .set<MoveTo>({
-            .target {0.0F, 0.0F, 0.0F},
-            .speed { 0.05F }
+            .target {0.0f, 0.0f, 0.0f},
+            .speed { 0.05f }
         });
 
     const auto banana_model { LoadModel(ASSET_PATH("models/banana.glb")) };
@@ -109,17 +112,17 @@ void init_game() {
 
         world.ecs.entity()
             .set<WorldModel>({ .model { banana ? banana_model : apple_model } })
-            .set<Spin>({ .speed { 1.0F } })
+            .set<Spin>({ .speed { 1.0f } })
             .set<Bounce>({
-                .speed { 0.05F },
-                .height { 0.2F },
-                .center_y { 1.0F },
-                .elapsed { util::GetRandomFloat(-1.0F, 1.0F) }
+                .speed { 0.05f },
+                .height { 0.5f },
+                .elapsed { util::GetRandomFloat(-1.0f, 1.0f) },
+                .center_y { 1.0f },
             })
-            .set<ShadowCaster>({ .radius = 0.25F })
+            .set<ShadowCaster>({ .radius = 0.25f })
             .set<WorldTransform>({
-                .pos { util::GetRandomFloat(-15.0F, 15.0F), 2.0F, util::GetRandomFloat(-15.0F, 15.0F) },
-                .rot { 0.0F, util::GetRandomFloat(0.0F, 360.0F), 0.0F }
+                .pos { util::GetRandomFloat(-15.0f, 15.0f), 2.0f, util::GetRandomFloat(-15.0f, 15.0f) },
+                .rot { 0.0f, util::GetRandomFloat(0.0f, 360.0f), 0.0f }
             })
             .set<Consumable>({
                 .colors = banana ? banana_colors : apple_colors ,

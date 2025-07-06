@@ -12,7 +12,7 @@ struct WorldCamera {
 struct CameraFollow {};
 
 struct WorldModel {
-    std::map<std::string, ModelAnimation> animations;
+    std::map<std::string, ModelAnimation> animations {};
     Model model {};
     bool textured { false };
 };
@@ -24,18 +24,18 @@ struct WorldGround {
 
 struct Animation {
     std::string name;
-    std::optional<std::string> run_once;
-    float frame_time {};
+    std::optional<std::string> run_once { std::nullopt };
+    float frame_time { 0.0f };
 };
 
 struct WorldTransform {
-    Vector3 pos { 0.0F, 0.0F, 0.0F };
-    Vector3 rot { 0.0F, 0.0F, 0.0F };
+    Vector3 pos { 0.0f, 0.0f, 0.0f };
+    Vector3 rot { 0.0f, 0.0f, 0.0f };
 };
 
 struct PrevWorldTransform {
-    Vector3 pos { 0.0F, 0.0F, 0.0F };
-    Vector3 rot { 0.0F, 0.0F, 0.0F };
+    Vector3 pos { 0.0f, 0.0f, 0.0f };
+    Vector3 rot { 0.0f, 0.0f, 0.0f };
 };
 
 struct ModelShader {

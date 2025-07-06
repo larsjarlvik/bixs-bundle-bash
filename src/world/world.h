@@ -1,7 +1,7 @@
 #pragma once
 #include <flecs.h>
 
-constexpr float FIXED_DT { 1.0F / 60.0F };
+constexpr float FIXED_DT { 1.0f / 60.0f };
 
 class World {
     public:

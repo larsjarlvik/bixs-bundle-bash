@@ -12,10 +12,10 @@
 #include "world/components/interpolation.h"
 #include "world/components/particle.h"
 
-constexpr float animation_speed { 240.0F };
+constexpr float animation_speed { 240.0f };
 
-constexpr Vector3 light_dir { -0.5F, -1.0F, -0.5F };
-constexpr Vector3 light_color { 0.4F, 0.4F, 0.4F };
+constexpr Vector3 light_dir { -0.5f, -1.0f, -0.5f };
+constexpr Vector3 light_color { 0.4f, 0.4f, 0.4f };
 
 namespace render_systems {
     void register_systems(const World &world) {
@@ -33,7 +33,7 @@ namespace render_systems {
             SetShaderValue(shader->shader, shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
             cam->camera.position = Vector3Add(
                 cam->camera.target,
-                {cam->distance, cam->distance * 1.5F, cam->distance}
+                {cam->distance, cam->distance * 1.5f, cam->distance}
             );
         }};
 
@@ -91,7 +91,7 @@ namespace render_systems {
 
                 model.model.transform = mat_transform;
 
-                DrawModel(model.model, {}, 1.0F, WHITE);
+                DrawModel(model.model, {}, 1.0f, WHITE);
             });
 
             EndShaderMode();
@@ -104,7 +104,7 @@ namespace render_systems {
 
             const auto query { iter.world().query<Particle, InterpolationState>() };
             query.each([](const Particle& particle, const InterpolationState& state) {
-                const auto particle_size { 0.1F * particle.lifetime };
+                const auto particle_size { 0.1f * particle.lifetime };
                 // Convert euler to rotation matrix (more efficient for complex rotations)
                 const auto rotation_matrix { MatrixRotateXYZ({
                     state.render_rot.x, // Convert to radians if needed
@@ -142,7 +142,7 @@ namespace render_systems {
                 const auto t { -state.render_pos.y / light_dir.y };
                 positions.push_back((Vector3){
                     .x = state.render_pos.x + light_dir.x * t,
-                    .y = 0.0F,
+                    .y = 0.0f,
                     .z = state.render_pos.z + light_dir.z * t
                 });
 
@@ -164,7 +164,7 @@ namespace render_systems {
             SetShaderValueV(shader->shader, shader->loc_shadow_radii,radii.data(), SHADER_UNIFORM_FLOAT, shadow_count);
             SetShaderValueV(shader->shader, shader->loc_shadow_itensities, intensities.data(), SHADER_UNIFORM_FLOAT, shadow_count);
 
-            DrawModel(ground->model, Vector3Zero(), 1.0F, WHITE);
+            DrawModel(ground->model, Vector3Zero(), 1.0f, WHITE);
             EndShaderMode();
         };
 
