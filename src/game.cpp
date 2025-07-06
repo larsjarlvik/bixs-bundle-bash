@@ -39,6 +39,7 @@ void init_game() {
         .loc_shadow_count { GetShaderLocation(ground_shader, "shadowCount") },
         .loc_shadow_positions { GetShaderLocation(ground_shader, "shadowPositions") },
         .loc_shadow_radii { GetShaderLocation(ground_shader, "shadowRadii") },
+        .loc_shadow_itensities { GetShaderLocation(ground_shader, "shadowIntensities")}
     });
 
     auto ground_size = 50.0F;
@@ -77,7 +78,7 @@ void init_game() {
         .set<Animation>({ .name { "Idle" } })
         .set<WorldTransform>({})
         .set<Consumer>({ .range = 0.5F })
-        .set<ShadowCaster>({ .radius = 0.6F })
+        .set<ShadowCaster>({ .radius = 0.4F })
         .set<MoveTo>({
             .target {0.0F, 0.0F, 0.0F},
             .speed { 0.05F }
@@ -115,7 +116,7 @@ void init_game() {
                 .center_y { 1.0F },
                 .elapsed { util::GetRandomFloat(-1.0F, 1.0F) }
             })
-            .set<ShadowCaster>({ .radius = 0.4F })
+            .set<ShadowCaster>({ .radius = 0.25F })
             .set<WorldTransform>({
                 .pos { util::GetRandomFloat(-15.0F, 15.0F), 2.0F, util::GetRandomFloat(-15.0F, 15.0F) },
                 .rot { 0.0F, util::GetRandomFloat(0.0F, 360.0F), 0.0F }
@@ -129,6 +130,10 @@ void init_game() {
     while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
+
+        if (IsKeyPressed(KEY_F)) {
+            ToggleFullscreen();
+        }
 
         world.update();
 

@@ -52,6 +52,7 @@ struct GroundShader {
     int loc_shadow_count;
     int loc_shadow_positions;
     int loc_shadow_radii;
+    int loc_shadow_itensities;
 };
 
 struct ShadowCaster {

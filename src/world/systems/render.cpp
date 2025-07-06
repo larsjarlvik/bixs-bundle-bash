@@ -127,6 +127,7 @@ namespace render_systems {
             EndShaderMode();
         };
 
+        // Render ground plane and shadows
         const auto render_ground = [](const flecs::iter& iter) {
             const auto* shader = iter.world().get<GroundShader>();
             const auto* ground = iter.world().get<WorldGround>();
@@ -134,9 +135,10 @@ namespace render_systems {
 
             std::vector<Vector3> positions;
             std::vector<float> radii;
+            std::vector<float> intensities;
 
             const auto query { iter.world().query<ShadowCaster, InterpolationState>() };
-            query.each([&positions, &radii](const ShadowCaster& caster, const InterpolationState& state) {
+            query.each([&positions, &radii, &intensities](const ShadowCaster& caster, const InterpolationState& state) {
                 const auto t { -state.render_pos.y / light_dir.y };
                 positions.push_back((Vector3){
                     .x = state.render_pos.x + light_dir.x * t,
@@ -144,7 +146,8 @@ namespace render_systems {
                     .z = state.render_pos.z + light_dir.z * t
                 });
 
-                radii.push_back(caster.radius);
+                radii.push_back(caster.radius * (1.0f + state.render_pos.y));
+                intensities.push_back(1.0f / (1.0f + state.render_pos.y * 6.0f));
             });
 
             // Prioritize shadows closer to the camera target
@@ -159,6 +162,7 @@ namespace render_systems {
             SetShaderValue(shader->shader, shader->loc_shadow_count, &shadow_count, SHADER_UNIFORM_INT);
             SetShaderValueV(shader->shader, shader->loc_shadow_positions, positions.data(), SHADER_UNIFORM_VEC3, shadow_count);
             SetShaderValueV(shader->shader, shader->loc_shadow_radii,radii.data(), SHADER_UNIFORM_FLOAT, shadow_count);
+            SetShaderValueV(shader->shader, shader->loc_shadow_itensities, intensities.data(), SHADER_UNIFORM_FLOAT, shadow_count);
 
             DrawModel(ground->model, Vector3Zero(), 1.0F, WHITE);
             EndShaderMode();
