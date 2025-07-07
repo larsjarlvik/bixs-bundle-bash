@@ -18,9 +18,7 @@ out vec3 fragColor;
 out vec2 fragTexCoord;
 
 void main() {
-    vec4 worldPosition =  vec4(vertexPosition, 1.0);
-    
-    fragPosition = worldPosition.xyz;
+    fragPosition = vertexPosition;
     fragNormal = normalize(mat3(transpose(inverse(matModel))) * vertexNormal);
     fragTexCoord = vertexTexCoord;
     fragColor = vertexColor;

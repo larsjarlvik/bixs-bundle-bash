@@ -7,34 +7,37 @@
 #include "world/components/render.h"
 #include "world/components/particle.h"
 #include "world/world.h"
+#include "world/terrain/terrain.h"
 
 namespace gameplay_systems {
     void register_systems(const World &world) {
         // Sets the MoveTo component to where the player clicks
         const auto move_target_system { [](flecs::iter &iter) {
-            const auto should_move { IsMouseButtonDown(MOUSE_LEFT_BUTTON) };
-            const auto *cam { should_move ? iter.world().get_mut<WorldCamera>() : nullptr };
+            const auto should_move = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+            const auto *cam = should_move ? iter.world().get_mut<WorldCamera>() : nullptr;
 
             while (iter.next()) {
-                if (should_move && cam != nullptr) {
-                    auto move_to { iter.field<MoveTo>(0) };
-                    const auto [position, direction] { GetMouseRay(GetMousePosition(), cam->camera) };
+                if (!should_move || !cam) continue;
 
+                auto move_to = iter.field<MoveTo>(0);
+                const auto ray = GetMouseRay(GetMousePosition(), cam->camera);
+
+                if (const auto hit = terrain::ray_terrain_intersect(ray.position, ray.direction); hit.has_value()) {
+                    // Set move target for each entity
                     for (const auto i : iter) {
-                        if (const auto target { -position.y / direction.y }; target > 0.0f) {
-                            move_to[i].target = Vector3Add(position, Vector3Scale(direction, target));
-                        }
+                        move_to[i].target = *hit;
                     }
                 }
             }
         }};
+
 
         // Moves an animated entity with a transform towards MoveTo
         const auto move_to_system { [](const MoveTo &move_to, WorldTransform &transform, Animation &animation) {
             const auto direction { Vector3Subtract(move_to.target, transform.pos) };
             const auto forward { Vector3Normalize(direction) };
 
-            if (Vector3Length(direction) < move_to.speed) {
+            if (Vector2Length({ direction.x, direction.z }) < move_to.speed) {
                 transform.pos = move_to.target;
                 animation.name = "Idle";
             } else {
@@ -42,6 +45,8 @@ namespace gameplay_systems {
                 transform.rot.y = atan2f(forward.x, forward.z) * (180.0f / PI);
                 animation.name = "Run";
             }
+
+            transform.pos.y = terrain::get_height(transform.pos.x, transform.pos.z);
         }};
 
         // Make an entity spin
@@ -51,7 +56,7 @@ namespace gameplay_systems {
 
         // Makes an entity bounce
         const auto bounce_system { [](Bounce &bounce, WorldTransform &transform) {
-            transform.pos.y = bounce.center_y +  sinf(bounce.elapsed) * bounce.height;
+            transform.pos.y = terrain::get_height(transform.pos.x, transform.pos.z) + bounce.center_y + sinf(bounce.elapsed) * bounce.height;
             bounce.elapsed += bounce.speed;
         }};
 

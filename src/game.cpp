@@ -4,17 +4,10 @@
 #include "world/components/render.h"
 #include "world/world.h"
 #include "game.h"
-#include "raymath.h"
 #include "rlgl.h"
 #include "util.h"
 #include "world/components/particle.h"
-
-#ifdef PLATFORM_ANDROID
-    #define ASSET_PATH(path) path
-#else
-    #define ASSET_PATH(path) "assets/" path
-#endif
-
+#include "world/terrain/terrain.h"
 
 
 void init_game() {
@@ -32,37 +25,37 @@ void init_game() {
         .distance = 3.0f
     });
 
-    // Create ground
-    const auto ground_shader { LoadShader(ASSET_PATH("shaders/ground.vs"), ASSET_PATH("shaders/ground.fs")) };
+    // Create ground;
+    const auto ground_shader{LoadShader(ASSET_PATH("shaders/ground.vs"), ASSET_PATH("shaders/ground.fs"))};
     world.ecs.set<GroundShader>({
-        .shader { ground_shader },
-        .loc_ground_size { GetShaderLocation(ground_shader, "groundSize") },
-        .loc_shadow_count { GetShaderLocation(ground_shader, "shadowCount") },
-        .loc_shadow_positions { GetShaderLocation(ground_shader, "shadowPositions") },
-        .loc_shadow_radii { GetShaderLocation(ground_shader, "shadowRadii") },
-        .loc_shadow_itensities { GetShaderLocation(ground_shader, "shadowIntensities")}
+        .shader{ground_shader},
+        .loc_light_dir{GetShaderLocation(ground_shader, "lightDir")},
+        .loc_light_color{GetShaderLocation(ground_shader, "lightColor")},
+        .loc_view_pos{GetShaderLocation(ground_shader, "viewPos")},
+        .loc_shadow_count{GetShaderLocation(ground_shader, "shadowCount")},
+        .loc_shadow_positions{GetShaderLocation(ground_shader, "shadowPositions")},
+        .loc_shadow_radii{GetShaderLocation(ground_shader, "shadowRadii")},
+        .loc_shadow_itensities{GetShaderLocation(ground_shader, "shadowIntensities")}
     });
 
-    auto ground_size = 50.0f;
-    auto ground_model { LoadModelFromMesh(GenMeshPlane(ground_size, ground_size, 1, 1)) };
-    ground_model.materials[0].shader = ground_shader;
-    world.ecs.set<WorldGround>({ .model { ground_model }, .size = ground_size });
+
 
     // Setup model shader
-    const auto shader { LoadShader(ASSET_PATH("shaders/model.vs"), ASSET_PATH("shaders/model.fs")) };
+    const auto shader{LoadShader(ASSET_PATH("shaders/model.vs"), ASSET_PATH("shaders/model.fs"))};
     world.ecs.set<ModelShader>({
-        .shader { shader },
-        .loc_light_dir { GetShaderLocation(shader, "lightDir") },
-        .loc_light_color { GetShaderLocation(shader, "lightColor") },
-        .loc_view_pos { GetShaderLocation(shader, "viewPos") },
-        .loc_use_texture { GetShaderLocation(shader, "useTexture") },
+        .shader{shader},
+        .loc_light_dir{GetShaderLocation(shader, "lightDir")},
+        .loc_light_color{GetShaderLocation(shader, "lightColor")},
+        .loc_view_pos{GetShaderLocation(shader, "viewPos")},
+        .loc_use_texture{GetShaderLocation(shader, "useTexture")},
     });
 
+    terrain::generate_terrain(world);
     // Create character model
-    int bix_anim_count { 0 };
+    int bix_anim_count{0};
 
-    const auto bix_model { LoadModel(ASSET_PATH("models/bix.glb")) };
-    const auto* bix_animations { LoadModelAnimations(ASSET_PATH("models/bix.glb"), &bix_anim_count) };
+    const auto bix_model{LoadModel(ASSET_PATH("models/bix.glb"))};
+    const auto *bix_animations{LoadModelAnimations(ASSET_PATH("models/bix.glb"), &bix_anim_count) };
     std::map<std::string, ModelAnimation> animationMap;
 
     for (int i { 0 }; i < bix_anim_count; i++) {
@@ -115,13 +108,13 @@ void init_game() {
             .set<Spin>({ .speed { 1.0f } })
             .set<Bounce>({
                 .speed { 0.05f },
-                .height { 0.5f },
+                .height { 0.25f },
                 .elapsed { util::GetRandomFloat(-1.0f, 1.0f) },
                 .center_y { 1.0f },
             })
             .set<ShadowCaster>({ .radius = 0.25f })
             .set<WorldTransform>({
-                .pos { util::GetRandomFloat(-15.0f, 15.0f), 2.0f, util::GetRandomFloat(-15.0f, 15.0f) },
+                .pos { util::GetRandomFloat(-15.0f, 15.0f), 0.0f, util::GetRandomFloat(-15.0f, 15.0f) },
                 .rot { 0.0f, util::GetRandomFloat(0.0f, 360.0f), 0.0f }
             })
             .set<Consumable>({

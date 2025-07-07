@@ -19,7 +19,6 @@ struct WorldModel {
 
 struct WorldGround {
     Model model {};
-    float size {};
 };
 
 struct Animation {
@@ -48,7 +47,9 @@ struct ModelShader {
 
 struct GroundShader {
     Shader shader;
-    int loc_ground_size;
+    int loc_light_dir;
+    int loc_light_color;
+    int loc_view_pos;
     int loc_shadow_count;
     int loc_shadow_positions;
     int loc_shadow_radii;

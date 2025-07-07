@@ -37,8 +37,13 @@ FetchContent_Declare(flecs
     GIT_TAG v4.0.5
     SYSTEM
 )
+FetchContent_Declare(FastNoiseLite
+    GIT_REPOSITORY https://github.com/Auburn/FastNoiseLite.git
+    GIT_TAG v1.1.1
+    SYSTEM
+)
 
-FetchContent_MakeAvailable(raylib flecs)
+FetchContent_MakeAvailable(raylib flecs FastNoiseLite)
 
 # Target Configuration
 file(GLOB_RECURSE SRC_FILES "src/*.cpp")
@@ -81,10 +86,13 @@ else()
     target_link_libraries(${PROJECT_NAME} PRIVATE raylib flecs::flecs)
 endif()
 
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-braced-scalar-init -Wextra -Werror)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-braced-scalar-init -Wno-error=missing-designated-field-initializers  -Wextra -Werror)
 
 # Common Configuration
-target_include_directories(${PROJECT_NAME} PRIVATE src)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    src
+    ${fastnoiselite_SOURCE_DIR}/Cpp
+)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
