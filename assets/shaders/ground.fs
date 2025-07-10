@@ -1,10 +1,12 @@
 #version 300 es
 precision highp float;
+precision highp sampler2D;
 
 in vec3 fragPosition;
 in vec2 fragTexCoord;
 in vec3 fragNormal;
 
+uniform sampler2D texture0;
 uniform int shadowCount;
 uniform vec3 lightDir;
 uniform vec3 lightColor;
@@ -33,28 +35,24 @@ void main() {
         totalShadow += alpha;
     }
 
-    totalShadow = min(totalShadow, 1.0) * 0.5;
+    totalShadow = 1.0 - min(totalShadow, 1.0);
 
     // Light stuff
-    vec3 normal = normalize(fragNormal);
     vec3 light = normalize(-lightDir);
     vec3 view = normalize(viewPos - fragPosition);
 
     // Diffuse
-    float diff = max(dot(normal, light), 0.0);
+    float diff = max(dot(fragNormal, light), 0.0);
 
     // Specular (Blinn–Phong)
     vec3 halfway = normalize(light + view);
-    float spec = pow(max(dot(normal, halfway), 0.0), 32.0);
+    float spec = pow(max(dot(fragNormal, halfway), 0.0), 32.0);
 
-    vec3 baseColor = vec3(0.4, 0.8, 0.2); // TODO: Add color/texture
-
+    vec3 baseColor = texture(texture0, fragTexCoord * 8.0).rgb;
     vec3 ambient = baseColor * 0.5;
     vec3 diffuse = baseColor * lightColor * diff;
     vec3 specular = lightColor * spec * 0.5;
 
     vec3 color = ambient + diffuse + specular;
-
-    // Combine results
-    finalColor = vec4(color - totalShadow, 1.0);
+    finalColor = vec4(color * totalShadow, 1.0);
 }

@@ -151,7 +151,7 @@ namespace render_systems {
                     shadows.push_back({
                         .position { *hit },
                         .radius { caster.radius * (1.0f + height_diff) }, // more height → larger blur radius
-                        .intensity { 1.0f / (1.0f + height_diff * 6.0f) } // more height → softer, lighter shadow
+                        .intensity { 1.0f / (1.5f + height_diff * 2.0f) } // more height → softer, lighter shadow
                     });
                 }
             });

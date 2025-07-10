@@ -1,6 +1,8 @@
 #include <FastNoiseLite.h>
 #include "terrain.h"
 
+#include "game.h"
+
 #include <vector>
 #include <raylib.h>
 #include <raymath.h>
@@ -102,6 +104,11 @@ namespace terrain {
         UploadMesh(&mesh, false);
 
         auto ground_model { LoadModelFromMesh(mesh) };
+
+        const auto ground_texture { LoadTexture(ASSET_PATH("textures/grass.jpg")) };
+        GenTextureMipmaps(const_cast<Texture2D*>(&ground_texture));
+        SetTextureFilter(ground_texture, TEXTURE_FILTER_TRILINEAR);
+        ground_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = ground_texture;
 
         const auto ground_shader { world.ecs.get<GroundShader>() };
         ground_model.materials[0].shader = ground_shader->shader;

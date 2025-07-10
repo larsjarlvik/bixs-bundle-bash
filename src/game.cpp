@@ -74,7 +74,7 @@ void init_game() {
         })
         .set<WorldTransform>({})
         .set<Consumer>({ .range = 0.5f })
-        .set<ShadowCaster>({ .radius = 0.4F })
+        .set<ShadowCaster>({ .radius = 0.5F })
         .set<MoveTo>({
             .target {0.0f, 0.0f, 0.0f},
             .speed { 0.05f }
@@ -112,7 +112,7 @@ void init_game() {
                 .elapsed { util::GetRandomFloat(-1.0f, 1.0f) },
                 .center_y { 1.0f },
             })
-            .set<ShadowCaster>({ .radius = 0.25f })
+            .set<ShadowCaster>({ .radius = 0.15f })
             .set<WorldTransform>({
                 .pos { util::GetRandomFloat(-15.0f, 15.0f), 0.0f, util::GetRandomFloat(-15.0f, 15.0f) },
                 .rot { 0.0f, util::GetRandomFloat(0.0f, 360.0f), 0.0f }
