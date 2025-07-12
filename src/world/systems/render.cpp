@@ -185,6 +185,25 @@ namespace render_systems {
             EndShaderMode();
         };
 
+        // Render water
+        const auto render_water = [](const flecs::iter& iter) {
+            const auto* shader = iter.world().get<WaterShader>();
+            const auto* water = iter.world().get<WorldWater>();
+            const auto *cam { iter.world().get<WorldCamera>() };
+
+            std::vector<Shadow> shadows;
+
+            BeginBlendMode(BLEND_ALPHA);
+            BeginShaderMode(shader->shader);
+            SetShaderValue(shader->shader, shader->loc_light_dir, &light_dir, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_light_color, &light_color, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
+
+            DrawModel(water->model, Vector3Zero(), 1.0f, WHITE);
+            EndShaderMode();
+            EndBlendMode();
+        };
+
         // End raylib render
         const auto end_render { [](flecs::iter) {
             EndMode3D();
@@ -224,6 +243,9 @@ namespace render_systems {
             .kind(world.render_phase)
             .run(render_particle);
 
+        world.ecs.system("render_water")
+            .kind(world.render_phase)
+            .run(render_water);
 
         world.ecs.system("end_render")
             .kind(world.render_phase)

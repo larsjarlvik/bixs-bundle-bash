@@ -25,8 +25,8 @@ void init_game() {
         .distance = 3.0f
     });
 
-    // Create ground;
-    const auto ground_shader{LoadShader(ASSET_PATH("shaders/ground.vs"), ASSET_PATH("shaders/ground.fs"))};
+    // Setup ground shader;
+    const auto ground_shader{ LoadShader(ASSET_PATH("shaders/ground.vs"), ASSET_PATH("shaders/ground.fs")) };
     world.ecs.set<GroundShader>({
         .shader{ground_shader},
         .loc_light_dir{GetShaderLocation(ground_shader, "lightDir")},
@@ -38,16 +38,23 @@ void init_game() {
         .loc_shadow_itensities{GetShaderLocation(ground_shader, "shadowIntensities")}
     });
 
-
+    // Setup water shader
+    const auto water_shader { LoadShader(ASSET_PATH("shaders/water.vs"), ASSET_PATH("shaders/water.fs")) };
+    world.ecs.set<WaterShader>({
+        .shader{water_shader},
+        .loc_light_dir{GetShaderLocation(water_shader, "lightDir")},
+        .loc_light_color{GetShaderLocation(water_shader, "lightColor")},
+        .loc_view_pos{GetShaderLocation(water_shader, "viewPos")},
+    });
 
     // Setup model shader
-    const auto shader{LoadShader(ASSET_PATH("shaders/model.vs"), ASSET_PATH("shaders/model.fs"))};
+    const auto model_shader { LoadShader(ASSET_PATH("shaders/model.vs"), ASSET_PATH("shaders/model.fs")) };
     world.ecs.set<ModelShader>({
-        .shader{shader},
-        .loc_light_dir{GetShaderLocation(shader, "lightDir")},
-        .loc_light_color{GetShaderLocation(shader, "lightColor")},
-        .loc_view_pos{GetShaderLocation(shader, "viewPos")},
-        .loc_use_texture{GetShaderLocation(shader, "useTexture")},
+        .shader{model_shader},
+        .loc_light_dir{GetShaderLocation(model_shader, "lightDir")},
+        .loc_light_color{GetShaderLocation(model_shader, "lightColor")},
+        .loc_view_pos{GetShaderLocation(model_shader, "viewPos")},
+        .loc_use_texture{GetShaderLocation(model_shader, "useTexture")},
     });
 
     terrain::generate_terrain(world);
@@ -101,10 +108,16 @@ void init_game() {
     };
 
     for (int i { 0 }; i < 200; ++i) {
-        const auto banana = util::GetRandomInt(0, 1) == 1;
+        const auto consumable = util::GetRandomInt(0, 1) == 1;
+        const auto pos = Vector3 { util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE), 0.0f, util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE) };
+
+        if (terrain::get_height(pos.x, pos.z) < 0.1f) {
+            --i;
+            continue;
+        }
 
         world.ecs.entity()
-            .set<WorldModel>({ .model { banana ? banana_model : apple_model } })
+            .set<WorldModel>({ .model { consumable ? banana_model : apple_model } })
             .set<Spin>({ .speed { 1.0f } })
             .set<Bounce>({
                 .speed { 0.05f },
@@ -114,11 +127,11 @@ void init_game() {
             })
             .set<ShadowCaster>({ .radius = 0.15f })
             .set<WorldTransform>({
-                .pos { util::GetRandomFloat(-15.0f, 15.0f), 0.0f, util::GetRandomFloat(-15.0f, 15.0f) },
+                .pos { pos },
                 .rot { 0.0f, util::GetRandomFloat(0.0f, 360.0f), 0.0f }
             })
             .set<Consumable>({
-                .colors = banana ? banana_colors : apple_colors ,
+                .colors = consumable ? banana_colors : apple_colors ,
                 .particles = 25,
             });
     }
@@ -139,7 +152,7 @@ void init_game() {
     UnloadModel(bix_model);
     UnloadModel(banana_model);
     UnloadModel(apple_model);
-    UnloadShader(shader);
+    UnloadShader(model_shader);
     UnloadShader(ground_shader);
     CloseWindow();
 }

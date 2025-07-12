@@ -21,6 +21,10 @@ struct WorldGround {
     Model model {};
 };
 
+struct WorldWater {
+    Model model {};
+};
+
 struct Animation {
     std::string name;
     std::optional<std::string> run_once { std::nullopt };
@@ -54,6 +58,13 @@ struct GroundShader {
     int loc_shadow_positions;
     int loc_shadow_radii;
     int loc_shadow_itensities;
+};
+
+struct WaterShader {
+    Shader shader;
+    int loc_light_dir;
+    int loc_light_color;
+    int loc_view_pos;
 };
 
 struct ShadowCaster {

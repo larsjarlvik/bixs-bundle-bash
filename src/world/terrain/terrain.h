@@ -3,6 +3,8 @@
 #include "raylib.h"
 #include "world/world.h"
 
+constexpr int WORLD_SIZE = 64;
+
 namespace terrain {
     void generate_terrain(const World &world);
     float get_height(float world_x, float world_z);
