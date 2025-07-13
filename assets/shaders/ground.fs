@@ -6,7 +6,9 @@ in vec3 fragPosition;
 in vec2 fragTexCoord;
 in vec3 fragNormal;
 
-uniform sampler2D texture0;
+uniform sampler2D texture0; // ground
+uniform sampler2D texture1; // coast
+
 uniform int shadowCount;
 uniform vec3 lightDir;
 uniform vec3 lightColor;
@@ -16,6 +18,11 @@ uniform float shadowRadii[64];
 uniform float shadowIntensities[64];
 
 out vec4 finalColor;
+
+float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
 
 void main() {
     // Shadow calculations
@@ -48,7 +55,12 @@ void main() {
     vec3 halfway = normalize(light + view);
     float spec = pow(max(dot(fragNormal, halfway), 0.0), 32.0);
 
-    vec3 baseColor = texture(texture0, fragTexCoord * 8.0).rgb;
+    vec3 baseColor = mix(
+        texture(texture1, fragTexCoord * 16.0).rgb,
+        texture(texture0, fragTexCoord * 8.0).rgb,
+        clamp(fragPosition.y, 0.0, 1.0)
+    );
+
     vec3 ambient = baseColor * 0.5;
     vec3 diffuse = baseColor * lightColor * diff;
     vec3 specular = lightColor * spec * 0.5;

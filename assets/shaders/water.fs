@@ -17,7 +17,7 @@ uniform vec3 viewPos;
 uniform float time;
 
 void main() {
-    float depth = -texture(texture0, fragTexCoord).r;
+    float depth = max(-texture(texture0, fragTexCoord).r, 0.0);
 
     vec2 worldPos2D = fragPosition.xz;
     vec2 toCenter = normalize(-worldPos2D);
@@ -57,8 +57,7 @@ void main() {
     vec3 baseColor = mix(shallowColor, deepColor, depthCurve);
 
     float x = depth * 4.0;
-    float alpha = (x * x);
-    alpha = clamp(alpha, 0.0, 0.5);
+    float alpha = clamp(x * x, 0.0, 0.5);
     alpha += (depth * depth) * 0.5;
 
     vec3 ambient = baseColor * 0.5;

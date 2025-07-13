@@ -30,7 +30,7 @@ namespace render_systems {
         const auto camera_follow { [&ecs = world.ecs](flecs::entity, const InterpolationState& state) {
             auto *cam { ecs.get_mut<WorldCamera>() };
             cam->camera.target = state.render_pos;
-            cam->camera.target.y = fmax(cam->camera.target.y, 0.0f);
+            cam->camera.target.y = fmax(cam->camera.target.y, 0.0);
         }};
 
         // Update camera position based on camera target and distance

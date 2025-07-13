@@ -19,13 +19,16 @@ namespace gameplay_systems {
             while (iter.next()) {
                 if (!should_move || !cam) continue;
 
-                auto move_to = iter.field<MoveTo>(0);
-                const auto ray = GetMouseRay(GetMousePosition(), cam->camera);
+                auto move_to{ iter.field<MoveTo>(0) };
+                const auto ray{ GetMouseRay(GetMousePosition(), cam->camera) };
 
-                if (const auto hit = terrain::ray_ground_intersect(ray.position, ray.direction); hit.has_value()) {
-                    // Set move target for each entity
+                if (const auto hit{ terrain::ray_ground_intersect(ray.position, ray.direction) }) {
                     for (const auto i : iter) {
-                        move_to[i].target = *hit;
+                        if (const auto target{ terrain::find_closest_shallow_point(*hit, cam->camera.target) }) {
+                            if (Vector3Distance(move_to->target, *target) > 0.5f) {
+                                move_to[i].target = *target;
+                            }
+                        }
                     }
                 }
             }

@@ -106,12 +106,21 @@ namespace terrain {
         auto ground_model { LoadModelFromMesh(mesh) };
 
         const auto ground_shader { world.ecs.get<GroundShader>() };
-        const auto ground_texture { LoadTexture(ASSET_PATH("textures/grass.jpg")) };
-        GenTextureMipmaps(const_cast<Texture2D*>(&ground_texture));
+        auto ground_texture { LoadTexture(ASSET_PATH("textures/grass.jpg")) };
+        auto coast_texture { LoadTexture(ASSET_PATH("textures/sand.jpg")) };
+
+        GenTextureMipmaps(&ground_texture);
+        GenTextureMipmaps(&coast_texture);
         SetTextureFilter(ground_texture, TEXTURE_FILTER_TRILINEAR);
+        SetTextureFilter(coast_texture, TEXTURE_FILTER_TRILINEAR);
+
         ground_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = ground_texture;
+        ground_model.materials[0].maps[MATERIAL_MAP_SPECULAR].texture = coast_texture;
+
         ground_model.materials[0].shader = ground_shader->shader;
-        world.ecs.set<WorldGround>({ .model { ground_model } });
+        world.ecs.set<WorldGround>({
+            .model { ground_model },
+        });
     }
 
     // Calculate height using barycentric

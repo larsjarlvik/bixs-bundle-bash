@@ -17,5 +17,7 @@ namespace terrain {
     void generate_water(const World &world);
 
     float get_height(float world_x, float world_z);
+
     std::optional<Vector3> ray_ground_intersect(const Vector3& origin, const Vector3& direction);
+    std::optional<Vector3> find_closest_shallow_point(const Vector3& target, const Vector3& source, float depth = 0.5f);
 }
