@@ -23,6 +23,7 @@ struct WorldGround {
 
 struct WorldWater {
     Model model {};
+    float time {};
 };
 
 struct Animation {
@@ -65,6 +66,7 @@ struct WaterShader {
     int loc_light_dir;
     int loc_light_color;
     int loc_view_pos;
+    int loc_time;
 };
 
 struct ShadowCaster {

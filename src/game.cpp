@@ -28,36 +28,39 @@ void init_game() {
     // Setup ground shader;
     const auto ground_shader{ LoadShader(ASSET_PATH("shaders/ground.vs"), ASSET_PATH("shaders/ground.fs")) };
     world.ecs.set<GroundShader>({
-        .shader{ground_shader},
-        .loc_light_dir{GetShaderLocation(ground_shader, "lightDir")},
-        .loc_light_color{GetShaderLocation(ground_shader, "lightColor")},
-        .loc_view_pos{GetShaderLocation(ground_shader, "viewPos")},
-        .loc_shadow_count{GetShaderLocation(ground_shader, "shadowCount")},
-        .loc_shadow_positions{GetShaderLocation(ground_shader, "shadowPositions")},
-        .loc_shadow_radii{GetShaderLocation(ground_shader, "shadowRadii")},
-        .loc_shadow_itensities{GetShaderLocation(ground_shader, "shadowIntensities")}
+        .shader { ground_shader },
+        .loc_light_dir { GetShaderLocation(ground_shader, "lightDir") },
+        .loc_light_color { GetShaderLocation(ground_shader, "lightColor") },
+        .loc_view_pos { GetShaderLocation(ground_shader, "viewPos") },
+        .loc_shadow_count { GetShaderLocation(ground_shader, "shadowCount") },
+        .loc_shadow_positions { GetShaderLocation(ground_shader, "shadowPositions") },
+        .loc_shadow_radii { GetShaderLocation(ground_shader, "shadowRadii") },
+        .loc_shadow_itensities { GetShaderLocation(ground_shader, "shadowIntensities") }
     });
 
     // Setup water shader
     const auto water_shader { LoadShader(ASSET_PATH("shaders/water.vs"), ASSET_PATH("shaders/water.fs")) };
     world.ecs.set<WaterShader>({
         .shader{water_shader},
-        .loc_light_dir{GetShaderLocation(water_shader, "lightDir")},
-        .loc_light_color{GetShaderLocation(water_shader, "lightColor")},
-        .loc_view_pos{GetShaderLocation(water_shader, "viewPos")},
+        .loc_light_dir { GetShaderLocation(water_shader, "lightDir") },
+        .loc_light_color { GetShaderLocation(water_shader, "lightColor") },
+        .loc_view_pos { GetShaderLocation(water_shader, "viewPos") },
+        .loc_time { GetShaderLocation(water_shader, "time") }
     });
 
     // Setup model shader
     const auto model_shader { LoadShader(ASSET_PATH("shaders/model.vs"), ASSET_PATH("shaders/model.fs")) };
     world.ecs.set<ModelShader>({
-        .shader{model_shader},
-        .loc_light_dir{GetShaderLocation(model_shader, "lightDir")},
-        .loc_light_color{GetShaderLocation(model_shader, "lightColor")},
-        .loc_view_pos{GetShaderLocation(model_shader, "viewPos")},
-        .loc_use_texture{GetShaderLocation(model_shader, "useTexture")},
+        .shader { model_shader },
+        .loc_light_dir { GetShaderLocation(model_shader, "lightDir") },
+        .loc_light_color { GetShaderLocation(model_shader, "lightColor") },
+        .loc_view_pos { GetShaderLocation(model_shader, "viewPos") },
+        .loc_use_texture { GetShaderLocation(model_shader, "useTexture") },
     });
 
-    terrain::generate_terrain(world);
+    terrain::generate_ground(world);
+    terrain::generate_water(world);
+
     // Create character model
     int bix_anim_count{0};
 
@@ -107,7 +110,7 @@ void init_game() {
         {101, 67, 33, 255}     // Brown (stem)
     };
 
-    for (int i { 0 }; i < 200; ++i) {
+    for (int i { 0 }; i < 100; ++i) {
         const auto consumable = util::GetRandomInt(0, 1) == 1;
         const auto pos = Vector3 { util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE), 0.0f, util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE) };
 
@@ -138,7 +141,7 @@ void init_game() {
 
     while (!WindowShouldClose()) {
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        ClearBackground({ 0, 128, 179, 1 });
 
         if (IsKeyPressed(KEY_F)) {
             ToggleFullscreen();

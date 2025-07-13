@@ -22,7 +22,7 @@ namespace gameplay_systems {
                 auto move_to = iter.field<MoveTo>(0);
                 const auto ray = GetMouseRay(GetMousePosition(), cam->camera);
 
-                if (const auto hit = terrain::ray_terrain_intersect(ray.position, ray.direction); hit.has_value()) {
+                if (const auto hit = terrain::ray_ground_intersect(ray.position, ray.direction); hit.has_value()) {
                     // Set move target for each entity
                     for (const auto i : iter) {
                         move_to[i].target = *hit;

@@ -53,6 +53,12 @@ void main() {
     vec3 diffuse = baseColor * lightColor * diff;
     vec3 specular = lightColor * spec * 0.5;
 
-    vec3 color = ambient + diffuse + specular;
-    finalColor = vec4(color * totalShadow, 1.0);
+    vec3 color = (ambient + diffuse + specular) * totalShadow;
+
+
+    // Mix the ground color with water
+    vec3 deepColor = vec3(0.0, 0.5, 0.7);
+    float depthCurve = smoothstep(0.0, 1.0, 0.0 - (fragPosition.y * 0.5));
+
+    finalColor = vec4(mix(color, deepColor, depthCurve), 1.0);
 }

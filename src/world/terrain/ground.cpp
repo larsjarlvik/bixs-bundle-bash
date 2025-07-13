@@ -9,20 +9,14 @@
 #include "world/world.h"
 #include "world/components/render.h"
 
-constexpr int DETAIL { 4 };
 constexpr float SCALE { 5.0f };
 constexpr float FREQUENCY { 0.1f };
 
-constexpr int DETAILED_SIZE { WORLD_SIZE * DETAIL };
-constexpr auto WORLD_CENTER { static_cast<float>(WORLD_SIZE) / 2.0f };
-
-// Fixed: Use proper dimensions for detailed terrain
-static std::vector<float> heights((WORLD_SIZE * DETAIL) * (WORLD_SIZE * DETAIL));
-
 namespace terrain {
+    std::vector<float> elevation(DETAILED_SIZE * DETAILED_SIZE);
+
     // Calculate the normal for a vertex in the terrain
     Vector3 calculateNormal(const std::vector<float> &heights, const int x, const int z) {
-
         const auto hL { (x > 0) ? heights[z * DETAILED_SIZE + (x - 1)] : heights[z * DETAILED_SIZE + x] };
         const auto hR { (x < DETAILED_SIZE - 1) ? heights[z * DETAILED_SIZE + (x + 1)] : heights[z * DETAILED_SIZE + x] };
         const auto hD { (z > 0) ? heights[(z - 1) * DETAILED_SIZE + x] : heights[z * DETAILED_SIZE + x] };
@@ -38,7 +32,8 @@ namespace terrain {
     }
 
     // Generate the terrain
-    void generate_terrain(const World &world) {
+    void generate_ground(const World &world) {
+
         FastNoiseLite noise;
         noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
         noise.SetSeed(1337);
@@ -53,9 +48,9 @@ namespace terrain {
                     Vector2 { static_cast<float>(x) / static_cast<float>(DETAIL), static_cast<float>(z) / static_cast<float>(DETAIL) }
                 );
 
-                heights[index] = (noiseValue + 1.0f) * 0.5f;
-                heights[index] -= distance / (static_cast<float>(WORLD_SIZE) * 0.5f);
-                heights[index] *= SCALE;
+                elevation[index] = (noiseValue + 1.0f) * 0.5f;
+                elevation[index] -= distance / (static_cast<float>(WORLD_SIZE) * 0.5f);
+                elevation[index] *= SCALE;
             }
         }
 
@@ -75,13 +70,13 @@ namespace terrain {
                 const auto index { z * DETAILED_SIZE + x };
 
                 mesh.vertices[index * 3] = (static_cast<float>(x) / DETAIL) - (WORLD_SIZE / 2.0f);
-                mesh.vertices[index * 3 + 1] = heights[index];
+                mesh.vertices[index * 3 + 1] = elevation[index];
                 mesh.vertices[index * 3 + 2] = (static_cast<float>(z) / DETAIL) - (WORLD_SIZE / 2.0f);
 
                 mesh.texcoords[index * 2] = static_cast<float>(x) / (DETAILED_SIZE - 1);
                 mesh.texcoords[index * 2 + 1] = static_cast<float>(z) / (DETAILED_SIZE - 1);
 
-                const auto normal { calculateNormal(heights, x, z) };
+                const auto normal { calculateNormal(elevation, x, z) };
                 mesh.normals[index * 3] = normal.x;
                 mesh.normals[index * 3 + 1] = normal.y;
                 mesh.normals[index * 3 + 2] = normal.z;
@@ -117,11 +112,6 @@ namespace terrain {
         ground_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = ground_texture;
         ground_model.materials[0].shader = ground_shader->shader;
         world.ecs.set<WorldGround>({ .model { ground_model } });
-
-        const auto water_shader { world.ecs.get<WaterShader>() };
-        const auto water_model { LoadModelFromMesh(GenMeshPlane(WORLD_SIZE, WORLD_SIZE, 1, 1)) };
-        water_model.materials[0].shader = water_shader->shader;
-        world.ecs.set<WorldWater>({ .model { water_model } });
     }
 
     // Calculate height using barycentric
@@ -159,10 +149,10 @@ namespace terrain {
         const auto fx { grid_x - static_cast<float>(x0) };
         const auto fz { grid_z - static_cast<float>(z0) };
 
-        const auto h00 { heights[z0 * DETAILED_SIZE + x0] }; // Bottom-left
-        const auto h10 { heights[z0 * DETAILED_SIZE + x1] }; // Bottom-right
-        const auto h01 { heights[z1 * DETAILED_SIZE + x0] }; // Top-left
-        const auto h11 { heights[z1 * DETAILED_SIZE + x1] }; // Top-right
+        const auto h00 { elevation[z0 * DETAILED_SIZE + x0] }; // Bottom-left
+        const auto h10 { elevation[z0 * DETAILED_SIZE + x1] }; // Bottom-right
+        const auto h01 { elevation[z1 * DETAILED_SIZE + x0] }; // Top-left
+        const auto h11 { elevation[z1 * DETAILED_SIZE + x1] }; // Top-right
 
         if (fx + fz <= 1.0f) {
             return barycentric(
@@ -181,8 +171,8 @@ namespace terrain {
         );
     }
 
-    // Check for terrain intersection and where
-    std::optional<Vector3> ray_terrain_intersect(const Vector3& origin, const Vector3& direction) {
+    // Check for ground intersection and where
+    std::optional<Vector3> ray_ground_intersect(const Vector3& origin, const Vector3& direction) {
         float min_t = 0.0f;
         float max_t = 50.0f;
 

@@ -30,6 +30,7 @@ namespace render_systems {
         const auto camera_follow { [&ecs = world.ecs](flecs::entity, const InterpolationState& state) {
             auto *cam { ecs.get_mut<WorldCamera>() };
             cam->camera.target = state.render_pos;
+            cam->camera.target.y = fmax(cam->camera.target.y, 0.0f);
         }};
 
         // Update camera position based on camera target and distance
@@ -134,16 +135,19 @@ namespace render_systems {
         };
 
         // Render ground plane and shadows
-        const auto render_ground = [](const flecs::iter& iter) {
+        const auto render_ground = [](const flecs::iter &iter) {
             const auto* shader = iter.world().get<GroundShader>();
             const auto* ground = iter.world().get<WorldGround>();
-            const auto *cam { iter.world().get<WorldCamera>() };
+            if (shader == nullptr || ground == nullptr) {
+                return;
+            }
 
+            const auto *cam { iter.world().get<WorldCamera>() };
             std::vector<Shadow> shadows;
 
             const auto query { iter.world().query<ShadowCaster, InterpolationState>() };
             query.each([&shadows](const ShadowCaster& caster, const InterpolationState& state) {
-                if (const auto hit = terrain::ray_terrain_intersect(state.render_pos, light_dir); hit.has_value()) {
+                if (const auto hit = terrain::ray_ground_intersect(state.render_pos, light_dir); hit.has_value()) {
                     // Shadow scale factor based on actual height difference
                     float height_diff = state.render_pos.y - terrain::get_height(state.render_pos.x, state.render_pos.z);
                     height_diff = std::max(height_diff, 0.001f); // prevent division by zero or negative radii
@@ -188,8 +192,15 @@ namespace render_systems {
         // Render water
         const auto render_water = [](const flecs::iter& iter) {
             const auto* shader = iter.world().get<WaterShader>();
-            const auto* water = iter.world().get<WorldWater>();
+            auto* water = iter.world().get_mut<WorldWater>();
+            if (shader == nullptr || water == nullptr) {
+                return;
+            }
+
             const auto *cam { iter.world().get<WorldCamera>() };
+
+            water->time += iter.delta_time() * 0.1f;
+            water->time = fmod(water->time, PI * 2.0f * 100.0f);
 
             std::vector<Shadow> shadows;
 
@@ -198,6 +209,7 @@ namespace render_systems {
             SetShaderValue(shader->shader, shader->loc_light_dir, &light_dir, SHADER_UNIFORM_VEC3);
             SetShaderValue(shader->shader, shader->loc_light_color, &light_color, SHADER_UNIFORM_VEC3);
             SetShaderValue(shader->shader, shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_time, &water->time, SHADER_UNIFORM_FLOAT);
 
             DrawModel(water->model, Vector3Zero(), 1.0f, WHITE);
             EndShaderMode();
