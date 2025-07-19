@@ -2,6 +2,7 @@
 #include "terrain.h"
 
 #include "game.h"
+#include "util.h"
 
 #include <vector>
 #include <raylib.h>
@@ -36,7 +37,7 @@ namespace terrain {
 
         FastNoiseLite noise;
         noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-        noise.SetSeed(1337);
+        noise.SetSeed(util::GetRandomInt(0, 10000));
         noise.SetFrequency(FREQUENCY);
 
         for (int z = 0; z < DETAILED_SIZE; z++) {
@@ -48,7 +49,7 @@ namespace terrain {
                     Vector2 { static_cast<float>(x) / static_cast<float>(DETAIL), static_cast<float>(z) / static_cast<float>(DETAIL) }
                 );
 
-                elevation[index] = (noiseValue + 1.0f) * 0.5f;
+                 elevation[index] = (noiseValue + 1.0f) * 0.5f;
                 elevation[index] -= distance / (static_cast<float>(WORLD_SIZE) * 0.5f);
                 elevation[index] *= SCALE;
             }

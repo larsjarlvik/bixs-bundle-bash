@@ -110,8 +110,32 @@ void init_game() {
         {101, 67, 33, 255}     // Brown (stem)
     };
 
+    const auto cheese_model { LoadModel(ASSET_PATH("models/cheese.glb")) };
+    const auto cheese_colors = std::vector<Color>{
+       {255, 215, 0, 255},    // Bright golden yellow (main body)
+        {255, 235, 60, 255},   // Vibrant cheese yellow (highlights)
+        {240, 180, 20, 255},   // Rich golden orange (mid-tones)
+        {200, 160, 30, 255},   // Deep cheddar gold (shadows)
+        {180, 130, 15, 255},   // Aged amber (darker areas)
+        {140, 100, 10, 255},   // Dark golden brown (deepest shadows)
+    };
+
+    const auto egg_model { LoadModel(ASSET_PATH("models/egg.glb")) };
+    const auto egg_colors = std::vector<Color>{
+        {218, 165, 32, 255},   // Golden brown (shell exterior)
+        {160, 120, 45, 255},   // Darker brown (shell shadows)
+        {245, 245, 240, 255},  // Off-white (shell interior/albumen)
+        {255, 215, 0, 255},    // Bright yellow (yolk)
+        {240, 200, 50, 255},   // Light golden yellow (yolk highlights)
+        {120, 90, 35, 255},    // Deep brown (shell cracks/edges)
+    };
+
+    // Arrays for easy indexing
+    const auto models = std::vector{ banana_model, apple_model, cheese_model, egg_model };
+    const auto color_sets = std::vector{ banana_colors, apple_colors, cheese_colors, egg_colors };
+
     for (int i { 0 }; i < 100; ++i) {
-        const auto consumable = util::GetRandomInt(0, 1) == 1;
+        const auto consumable_type = util::GetRandomInt(0, 3);
         const auto pos = Vector3 { util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE), 0.0f, util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE) };
 
         if (terrain::get_height(pos.x, pos.z) < 0.1f) {
@@ -120,7 +144,7 @@ void init_game() {
         }
 
         world.ecs.entity()
-            .set<WorldModel>({ .model { consumable ? banana_model : apple_model } })
+            .set<WorldModel>({ .model { models[consumable_type] } })
             .set<Spin>({ .speed { 1.0f } })
             .set<Bounce>({
                 .speed { 0.05f },
@@ -134,7 +158,7 @@ void init_game() {
                 .rot { 0.0f, util::GetRandomFloat(0.0f, 360.0f), 0.0f }
             })
             .set<Consumable>({
-                .colors = consumable ? banana_colors : apple_colors ,
+                .colors = color_sets[consumable_type],
                 .particles = 25,
             });
     }
