@@ -27,18 +27,41 @@ endif()
 # Dependencies
 include(FetchContent)
 
-FetchContent_Declare(raylib
-    GIT_REPOSITORY https://github.com/raysan5/raylib.git
-    GIT_TAG 5.5
-    SYSTEM
+FetchContent_Declare(
+    raylib
+    URL https://github.com/raysan5/raylib/archive/5.5.tar.gz
 )
-FetchContent_Declare(flecs
-    GIT_REPOSITORY https://github.com/SanderMertens/flecs.git
-    GIT_TAG v4.0.5
-    SYSTEM
+FetchContent_Declare(
+    flecs
+    URL https://github.com/SanderMertens/flecs/archive/v4.0.5.tar.gz
+)
+FetchContent_Declare(
+    FastNoiseLite
+    URL https://github.com/Auburn/FastNoiseLite/archive/v1.1.1.tar.gz
 )
 
-FetchContent_MakeAvailable(raylib flecs)
+FetchContent_MakeAvailable(raylib flecs FastNoiseLite)
+
+# Mark external library include directories as SYSTEM to suppress warnings
+if(TARGET raylib)
+    target_compile_options(raylib PRIVATE -w)
+    get_target_property(RAYLIB_INCLUDE_DIRS raylib INTERFACE_INCLUDE_DIRECTORIES)
+    if(RAYLIB_INCLUDE_DIRS)
+        target_include_directories(raylib SYSTEM INTERFACE ${RAYLIB_INCLUDE_DIRS})
+    endif()
+endif()
+
+if(TARGET flecs)
+    target_compile_options(flecs PRIVATE -w)
+    get_target_property(FLECS_INCLUDE_DIRS flecs INTERFACE_INCLUDE_DIRECTORIES)
+    if(FLECS_INCLUDE_DIRS)
+        target_include_directories(flecs SYSTEM INTERFACE ${FLECS_INCLUDE_DIRS})
+    endif()
+endif()
+
+if(TARGET flecs_static)
+    target_compile_options(flecs_static PRIVATE -w)
+endif()
 
 # Target Configuration
 file(GLOB_RECURSE SRC_FILES "src/*.cpp")
@@ -81,10 +104,17 @@ else()
     target_link_libraries(${PROJECT_NAME} PRIVATE raylib flecs::flecs)
 endif()
 
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-braced-scalar-init -Wextra -Werror)
+if(ANDROID)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-braced-scalar-init -Wno-error=missing-field-initializers -Wextra -Werror)
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-braced-scalar-init -Wno-error=missing-designated-field-initializers -Wextra -Werror)
+endif()
 
 # Common Configuration
-target_include_directories(${PROJECT_NAME} PRIVATE src)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    src
+    ${fastnoiselite_SOURCE_DIR}/Cpp
+)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON

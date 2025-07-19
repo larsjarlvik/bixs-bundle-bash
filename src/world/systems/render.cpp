@@ -11,11 +11,18 @@
 #include "world/world.h"
 #include "world/components/interpolation.h"
 #include "world/components/particle.h"
+#include "world/terrain/terrain.h"
 
 constexpr float animation_speed { 240.0f };
 
 constexpr Vector3 light_dir { -0.5f, -1.0f, -0.5f };
 constexpr Vector3 light_color { 0.4f, 0.4f, 0.4f };
+
+struct Shadow {
+    Vector3 position;
+    float radius;
+    float intensity;
+};
 
 namespace render_systems {
     void register_systems(const World &world) {
@@ -23,6 +30,7 @@ namespace render_systems {
         const auto camera_follow { [&ecs = world.ecs](flecs::entity, const InterpolationState& state) {
             auto *cam { ecs.get_mut<WorldCamera>() };
             cam->camera.target = state.render_pos;
+            cam->camera.target.y = fmax(cam->camera.target.y, 0.0);
         }};
 
         // Update camera position based on camera target and distance
@@ -45,7 +53,6 @@ namespace render_systems {
 
         // Setup lighting properties in shader
         const auto setup_lighting { [](flecs::entity, const ModelShader &shader) {
-
             SetShaderValue(shader.shader, shader.loc_light_dir, &light_dir, SHADER_UNIFORM_VEC3);
             SetShaderValue(shader.shader, shader.loc_light_color, &light_color, SHADER_UNIFORM_VEC3);
         }};
@@ -128,37 +135,51 @@ namespace render_systems {
         };
 
         // Render ground plane and shadows
-        const auto render_ground = [](const flecs::iter& iter) {
+        const auto render_ground = [](const flecs::iter &iter) {
             const auto* shader = iter.world().get<GroundShader>();
             const auto* ground = iter.world().get<WorldGround>();
-            const auto *cam { iter.world().get<WorldCamera>() };
+            if (shader == nullptr || ground == nullptr) {
+                return;
+            }
 
-            std::vector<Vector3> positions;
-            std::vector<float> radii;
-            std::vector<float> intensities;
+            const auto *cam { iter.world().get<WorldCamera>() };
+            std::vector<Shadow> shadows;
 
             const auto query { iter.world().query<ShadowCaster, InterpolationState>() };
-            query.each([&positions, &radii, &intensities](const ShadowCaster& caster, const InterpolationState& state) {
-                const auto t { -state.render_pos.y / light_dir.y };
-                positions.push_back((Vector3){
-                    .x = state.render_pos.x + light_dir.x * t,
-                    .y = 0.0f,
-                    .z = state.render_pos.z + light_dir.z * t
-                });
+            query.each([&shadows](const ShadowCaster& caster, const InterpolationState& state) {
+                if (const auto hit = terrain::ray_ground_intersect(state.render_pos, light_dir); hit.has_value()) {
+                    // Shadow scale factor based on actual height difference
+                    float height_diff = state.render_pos.y - terrain::get_height(state.render_pos.x, state.render_pos.z);
+                    height_diff = std::max(height_diff, 0.001f); // prevent division by zero or negative radii
 
-                radii.push_back(caster.radius * (1.0f + state.render_pos.y));
-                intensities.push_back(1.0f / (1.0f + state.render_pos.y * 6.0f));
+                    shadows.push_back({
+                        .position { *hit },
+                        .radius { caster.radius * (1.0f + height_diff) }, // more height → larger blur radius
+                        .intensity { 1.0f / (1.5f + height_diff * 2.0f) } // more height → softer, lighter shadow
+                    });
+                }
             });
 
             // Prioritize shadows closer to the camera target
-            std::sort(positions.begin(), positions.end(), [&cam](const Vector3 &a, const Vector3 &b) {
-                return Vector3Distance(cam->camera.target, a) < Vector3Distance(cam->camera.target, b);
+            std::sort(shadows.begin(), shadows.end(), [&cam](const Shadow &a, const Shadow &b) {
+                return Vector3Distance(cam->camera.target, a.position) < Vector3Distance(cam->camera.target, b.position);
             });
 
-            const auto shadow_count = static_cast<int>(std::min(positions.size(), static_cast<size_t>(64)));
+            const auto shadow_count = static_cast<int>(std::min(shadows.size(), static_cast<size_t>(64)));
+            std::vector<Vector3> positions(shadow_count);
+            std::vector<float> radii(shadow_count);
+            std::vector<float> intensities(shadow_count);
+
+            for (int i = 0; i < shadow_count; ++i) {
+                positions[i] = shadows[i].position;
+                radii[i] = shadows[i].radius;
+                intensities[i] = shadows[i].intensity;
+            }
 
             BeginShaderMode(shader->shader);
-            SetShaderValue(shader->shader, shader->loc_ground_size, &ground->size, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(shader->shader, shader->loc_light_dir, &light_dir, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_light_color, &light_color, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
             SetShaderValue(shader->shader, shader->loc_shadow_count, &shadow_count, SHADER_UNIFORM_INT);
             SetShaderValueV(shader->shader, shader->loc_shadow_positions, positions.data(), SHADER_UNIFORM_VEC3, shadow_count);
             SetShaderValueV(shader->shader, shader->loc_shadow_radii,radii.data(), SHADER_UNIFORM_FLOAT, shadow_count);
@@ -166,6 +187,33 @@ namespace render_systems {
 
             DrawModel(ground->model, Vector3Zero(), 1.0f, WHITE);
             EndShaderMode();
+        };
+
+        // Render water
+        const auto render_water = [](const flecs::iter& iter) {
+            const auto* shader = iter.world().get<WaterShader>();
+            auto* water = iter.world().get_mut<WorldWater>();
+            if (shader == nullptr || water == nullptr) {
+                return;
+            }
+
+            const auto *cam { iter.world().get<WorldCamera>() };
+
+            water->time += iter.delta_time() * 0.1f;
+            water->time = fmod(water->time, PI * 2.0f * 100.0f);
+
+            std::vector<Shadow> shadows;
+
+            BeginBlendMode(BLEND_ALPHA);
+            BeginShaderMode(shader->shader);
+            SetShaderValue(shader->shader, shader->loc_light_dir, &light_dir, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_light_color, &light_color, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_time, &water->time, SHADER_UNIFORM_FLOAT);
+
+            DrawModel(water->model, Vector3Zero(), 1.0f, WHITE);
+            EndShaderMode();
+            EndBlendMode();
         };
 
         // End raylib render
@@ -195,6 +243,10 @@ namespace render_systems {
             .kind(world.fixed_phase)
             .each(animate_model);
 
+        world.ecs.system("render_ground")
+            .kind(world.render_phase)
+            .run(render_ground);
+
         world.ecs.system("render_model")
             .kind(world.render_phase)
             .run(render_model);
@@ -203,9 +255,9 @@ namespace render_systems {
             .kind(world.render_phase)
             .run(render_particle);
 
-        world.ecs.system("render_ground")
+        world.ecs.system("render_water")
             .kind(world.render_phase)
-            .run(render_ground);
+            .run(render_water);
 
         world.ecs.system("end_render")
             .kind(world.render_phase)

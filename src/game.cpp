@@ -4,17 +4,10 @@
 #include "world/components/render.h"
 #include "world/world.h"
 #include "game.h"
-#include "raymath.h"
 #include "rlgl.h"
 #include "util.h"
 #include "world/components/particle.h"
-
-#ifdef PLATFORM_ANDROID
-    #define ASSET_PATH(path) path
-#else
-    #define ASSET_PATH(path) "assets/" path
-#endif
-
+#include "world/terrain/terrain.h"
 
 
 void init_game() {
@@ -32,37 +25,47 @@ void init_game() {
         .distance = 3.0f
     });
 
-    // Create ground
-    const auto ground_shader { LoadShader(ASSET_PATH("shaders/ground.vs"), ASSET_PATH("shaders/ground.fs")) };
+    // Setup ground shader;
+    const auto ground_shader{ LoadShader(ASSET_PATH("shaders/ground.vs"), ASSET_PATH("shaders/ground.fs")) };
     world.ecs.set<GroundShader>({
         .shader { ground_shader },
-        .loc_ground_size { GetShaderLocation(ground_shader, "groundSize") },
+        .loc_light_dir { GetShaderLocation(ground_shader, "lightDir") },
+        .loc_light_color { GetShaderLocation(ground_shader, "lightColor") },
+        .loc_view_pos { GetShaderLocation(ground_shader, "viewPos") },
         .loc_shadow_count { GetShaderLocation(ground_shader, "shadowCount") },
         .loc_shadow_positions { GetShaderLocation(ground_shader, "shadowPositions") },
         .loc_shadow_radii { GetShaderLocation(ground_shader, "shadowRadii") },
-        .loc_shadow_itensities { GetShaderLocation(ground_shader, "shadowIntensities")}
+        .loc_shadow_itensities { GetShaderLocation(ground_shader, "shadowIntensities") }
     });
 
-    auto ground_size = 50.0f;
-    auto ground_model { LoadModelFromMesh(GenMeshPlane(ground_size, ground_size, 1, 1)) };
-    ground_model.materials[0].shader = ground_shader;
-    world.ecs.set<WorldGround>({ .model { ground_model }, .size = ground_size });
+    // Setup water shader
+    const auto water_shader { LoadShader(ASSET_PATH("shaders/water.vs"), ASSET_PATH("shaders/water.fs")) };
+    world.ecs.set<WaterShader>({
+        .shader{water_shader},
+        .loc_light_dir { GetShaderLocation(water_shader, "lightDir") },
+        .loc_light_color { GetShaderLocation(water_shader, "lightColor") },
+        .loc_view_pos { GetShaderLocation(water_shader, "viewPos") },
+        .loc_time { GetShaderLocation(water_shader, "time") }
+    });
 
     // Setup model shader
-    const auto shader { LoadShader(ASSET_PATH("shaders/model.vs"), ASSET_PATH("shaders/model.fs")) };
+    const auto model_shader { LoadShader(ASSET_PATH("shaders/model.vs"), ASSET_PATH("shaders/model.fs")) };
     world.ecs.set<ModelShader>({
-        .shader { shader },
-        .loc_light_dir { GetShaderLocation(shader, "lightDir") },
-        .loc_light_color { GetShaderLocation(shader, "lightColor") },
-        .loc_view_pos { GetShaderLocation(shader, "viewPos") },
-        .loc_use_texture { GetShaderLocation(shader, "useTexture") },
+        .shader { model_shader },
+        .loc_light_dir { GetShaderLocation(model_shader, "lightDir") },
+        .loc_light_color { GetShaderLocation(model_shader, "lightColor") },
+        .loc_view_pos { GetShaderLocation(model_shader, "viewPos") },
+        .loc_use_texture { GetShaderLocation(model_shader, "useTexture") },
     });
 
-    // Create character model
-    int bix_anim_count { 0 };
+    terrain::generate_ground(world);
+    terrain::generate_water(world);
 
-    const auto bix_model { LoadModel(ASSET_PATH("models/bix.glb")) };
-    const auto* bix_animations { LoadModelAnimations(ASSET_PATH("models/bix.glb"), &bix_anim_count) };
+    // Create character model
+    int bix_anim_count{0};
+
+    const auto bix_model{LoadModel(ASSET_PATH("models/bix.glb"))};
+    const auto *bix_animations{LoadModelAnimations(ASSET_PATH("models/bix.glb"), &bix_anim_count) };
     std::map<std::string, ModelAnimation> animationMap;
 
     for (int i { 0 }; i < bix_anim_count; i++) {
@@ -81,7 +84,7 @@ void init_game() {
         })
         .set<WorldTransform>({})
         .set<Consumer>({ .range = 0.5f })
-        .set<ShadowCaster>({ .radius = 0.4F })
+        .set<ShadowCaster>({ .radius = 0.5F })
         .set<MoveTo>({
             .target {0.0f, 0.0f, 0.0f},
             .speed { 0.05f }
@@ -107,32 +110,38 @@ void init_game() {
         {101, 67, 33, 255}     // Brown (stem)
     };
 
-    for (int i { 0 }; i < 200; ++i) {
-        const auto banana = util::GetRandomInt(0, 1) == 1;
+    for (int i { 0 }; i < 100; ++i) {
+        const auto consumable = util::GetRandomInt(0, 1) == 1;
+        const auto pos = Vector3 { util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE), 0.0f, util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE) };
+
+        if (terrain::get_height(pos.x, pos.z) < 0.1f) {
+            --i;
+            continue;
+        }
 
         world.ecs.entity()
-            .set<WorldModel>({ .model { banana ? banana_model : apple_model } })
+            .set<WorldModel>({ .model { consumable ? banana_model : apple_model } })
             .set<Spin>({ .speed { 1.0f } })
             .set<Bounce>({
                 .speed { 0.05f },
-                .height { 0.5f },
+                .height { 0.25f },
                 .elapsed { util::GetRandomFloat(-1.0f, 1.0f) },
                 .center_y { 1.0f },
             })
-            .set<ShadowCaster>({ .radius = 0.25f })
+            .set<ShadowCaster>({ .radius = 0.15f })
             .set<WorldTransform>({
-                .pos { util::GetRandomFloat(-15.0f, 15.0f), 2.0f, util::GetRandomFloat(-15.0f, 15.0f) },
+                .pos { pos },
                 .rot { 0.0f, util::GetRandomFloat(0.0f, 360.0f), 0.0f }
             })
             .set<Consumable>({
-                .colors = banana ? banana_colors : apple_colors ,
+                .colors = consumable ? banana_colors : apple_colors ,
                 .particles = 25,
             });
     }
 
     while (!WindowShouldClose()) {
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        ClearBackground({ 0, 128, 179, 1 });
 
         if (IsKeyPressed(KEY_F)) {
             ToggleFullscreen();
@@ -146,7 +155,7 @@ void init_game() {
     UnloadModel(bix_model);
     UnloadModel(banana_model);
     UnloadModel(apple_model);
-    UnloadShader(shader);
+    UnloadShader(model_shader);
     UnloadShader(ground_shader);
     CloseWindow();
 }

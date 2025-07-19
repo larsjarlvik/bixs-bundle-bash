@@ -26,11 +26,11 @@ namespace interpolation_systems {
         }};
 
         world.ecs.system<WorldTransform>("store_previous")
-            .kind(world.fixed_phase)
+            .kind(world.pre_fixed_phase)
             .each(store_previous);
 
         world.ecs.system<WorldTransform, InterpolationState>("set_render_state")
-            .kind(world.render_phase)
+            .kind(world.pre_render_phase)
             .each(set_render_state);
     }
 }
