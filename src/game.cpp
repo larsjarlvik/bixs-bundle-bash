@@ -90,46 +90,67 @@ void init_game() {
             .speed { 0.05f }
         });
 
+
+    const auto tree_model { LoadModel(ASSET_PATH("models/tree.glb")) };
+    for (int i { 0 }; i < 20; ++i) {
+        const auto size = util::GetRandomFloat(0.9f, 1.3f);
+        auto pos = Vector3 { util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE), 0.0f, util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE) };
+        pos.y = terrain::get_height(pos.x, pos.z);
+
+        if (pos.y < 0.5f) {
+            --i;
+            continue;
+        }
+
+        world.ecs.entity()
+            .set<WorldModel>({ .model { tree_model } })
+            .set<ShadowCaster>({ .radius = 1.3f * size })
+            .set<WorldTransform>({
+                .pos { pos },
+                .rot { 0.0f, util::GetRandomFloat(0.0f, 360.0f), 0.0f },
+                .scale { size }
+            });
+    }
+
     const auto banana_model { LoadModel(ASSET_PATH("models/banana.glb")) };
     const auto banana_colors = std::vector<Color>{
-        {255, 235, 59, 255},   // Bright banana yellow
-        {255, 180, 15, 255},   // Vibrant orange-gold
-        {240, 220, 80, 255},   // Creamy yellow
-        {180, 140, 35, 255},   // Rich golden brown
-        {100, 160, 60, 255},   // Banana leaf green
-        {130, 80, 40, 255},    // Dark brown (stem/spots)
+        {255, 255, 0, 255},    // Electric banana yellow
+        {255, 165, 0, 255},    // Blazing orange-gold
+        {255, 240, 0, 255},    // Neon creamy yellow
+        {200, 140, 0, 255},    // Intense golden brown
+        {50, 205, 50, 255},    // Vivid lime green
+        {139, 69, 19, 255},    // Rich saddle brown
     };
 
     const auto apple_model { LoadModel(ASSET_PATH("models/apple.glb")) };
     const auto apple_colors = std::vector<Color>{
-        {220, 50, 47, 255},    // Deep red (main body)
-        {255, 80, 70, 255},    // Bright red (highlights)
-        {180, 35, 30, 255},    // Dark red (shadows)
-        {255, 140, 60, 255},   // Orange-red (gradient area)
-        {255, 200, 80, 255},   // Golden yellow (bottom gradient)
-        {101, 67, 33, 255}     // Brown (stem)
+        {255, 0, 0, 255},      // Pure crimson red
+        {255, 69, 0, 255},     // Orange-red flame
+        {178, 34, 34, 255},    // Fire brick red
+        {255, 140, 0, 255},    // Dark orange burst
+        {255, 215, 0, 255},    // Gold highlight
+        {160, 82, 45, 255}     // Saddle brown stem
     };
 
     const auto cheese_model { LoadModel(ASSET_PATH("models/cheese.glb")) };
     const auto cheese_colors = std::vector<Color>{
-       {255, 215, 0, 255},    // Bright golden yellow (main body)
-        {255, 235, 60, 255},   // Vibrant cheese yellow (highlights)
-        {240, 180, 20, 255},   // Rich golden orange (mid-tones)
-        {200, 160, 30, 255},   // Deep cheddar gold (shadows)
-        {180, 130, 15, 255},   // Aged amber (darker areas)
-        {140, 100, 10, 255},   // Dark golden brown (deepest shadows)
+        {255, 215, 0, 255},    // Pure gold
+        {255, 255, 0, 255},    // Electric yellow
+        {255, 140, 0, 255},    // Dark orange
+        {218, 165, 32, 255},   // Goldenrod
+        {184, 134, 11, 255},   // Dark goldenrod
+        {139, 69, 19, 255},    // Saddle brown depths
     };
 
     const auto egg_model { LoadModel(ASSET_PATH("models/egg.glb")) };
     const auto egg_colors = std::vector<Color>{
-        {218, 165, 32, 255},   // Golden brown (shell exterior)
-        {160, 120, 45, 255},   // Darker brown (shell shadows)
-        {245, 245, 240, 255},  // Off-white (shell interior/albumen)
-        {255, 215, 0, 255},    // Bright yellow (yolk)
-        {240, 200, 50, 255},   // Light golden yellow (yolk highlights)
-        {120, 90, 35, 255},    // Deep brown (shell cracks/edges)
+        {139, 69, 19, 255},    // Rich saddle brown shell
+        {160, 82, 45, 255},    // Saddle brown shadows
+        {210, 180, 140, 255},  // Warm tan shell
+        {255, 255, 0, 255},    // Electric yolk yellow
+        {255, 215, 0, 255},    // Gold yolk highlights
+        {101, 67, 33, 255},    // Dark olive brown cracks
     };
-
     // Arrays for easy indexing
     const auto models = std::vector{ banana_model, apple_model, cheese_model, egg_model };
     const auto color_sets = std::vector{ banana_colors, apple_colors, cheese_colors, egg_colors };

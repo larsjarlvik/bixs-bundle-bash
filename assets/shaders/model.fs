@@ -25,14 +25,19 @@ void main() {
 
     // Specular (Blinn–Phong)
     vec3 halfway = normalize(light + view);
-    float spec = pow(max(dot(normal, halfway), 0.0), 32.0);
+    float spec = pow(max(dot(normal, halfway), 0.0), 6.0);
 
-    vec3 baseColor = (useTexture ? texture(texture0, fragTexCoord).rgb : fragColor) * colDiffuse.rgb;
+    vec3 baseColor = useTexture ? texture(texture0, fragTexCoord).rgb : pow(fragColor, vec3(1.0 / 2.2)) * colDiffuse.rgb;
 
     vec3 ambient = baseColor * 0.5;
     vec3 diffuse = baseColor * lightColor * diff;
-    vec3 specular = lightColor * spec * 0.5;
+    vec3 specular = lightColor * spec * 0.3;
 
     vec3 color = ambient + diffuse + specular;
-    finalColor = vec4(color, 1.0);
+
+    // Fade out elements close to camera
+    float distanceFromCamera = distance(fragPosition, viewPos);
+    float fadeAlpha = smoothstep(1.0, 1.5, distanceFromCamera);
+
+    finalColor = vec4(color, fadeAlpha);
 }

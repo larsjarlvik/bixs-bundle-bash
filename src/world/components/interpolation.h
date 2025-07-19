@@ -6,4 +6,6 @@ struct InterpolationState {
     Vector3 render_pos { 0.0f, 0.0f, 0.0f };
     Vector3 prev_rot { 0.0f, 0.0f, 0.0f };
     Quaternion render_rot { 0.0f, 0.0f, 0.0f, 0.0f };
+    float render_scale { 1.0f };
+    float prev_scale { 1.0f };
 };

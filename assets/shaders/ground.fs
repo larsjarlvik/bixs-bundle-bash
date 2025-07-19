@@ -13,9 +13,9 @@ uniform int shadowCount;
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 uniform vec3 viewPos;
-uniform vec3 shadowPositions[64];
-uniform float shadowRadii[64];
-uniform float shadowIntensities[64];
+uniform vec3 shadowPositions[128];
+uniform float shadowRadii[128];
+uniform float shadowIntensities[128];
 
 out vec4 finalColor;
 
@@ -26,8 +26,7 @@ float hash(vec2 p) {
 
 void main() {
     // Shadow calculations
-    float totalShadow = 0.0;
-
+    float lightTransmission = 1.0;
     for (int i = 0; i < shadowCount && i < 64; i++) {
         vec3 shadowPos = shadowPositions[i];
         float shadowRadius = shadowRadii[i];
@@ -39,10 +38,10 @@ void main() {
         float alpha = exp(-normalizedDist * normalizedDist * 2.5);
         alpha *= shadowIntensity;
 
-        totalShadow += alpha;
+        lightTransmission *= (1.0 - alpha);
     }
 
-    totalShadow = 1.0 - min(totalShadow, 1.0);
+    lightTransmission = clamp(lightTransmission, 0.3, 1.0);
 
     // Light stuff
     vec3 light = normalize(-lightDir);
@@ -53,11 +52,11 @@ void main() {
 
     // Specular (Blinn–Phong)
     vec3 halfway = normalize(light + view);
-    float spec = pow(max(dot(fragNormal, halfway), 0.0), 32.0);
+    float spec = pow(max(dot(fragNormal, halfway), 0.0), 6.0);
 
     vec3 baseColor = mix(
-        texture(texture1, fragTexCoord * 16.0).rgb,
-        texture(texture0, fragTexCoord * 8.0).rgb,
+        texture(texture1, fragTexCoord * 6.0).rgb,
+        texture(texture0, fragTexCoord * 6.0).rgb,
         clamp(fragPosition.y, 0.0, 1.0)
     );
 
@@ -65,8 +64,7 @@ void main() {
     vec3 diffuse = baseColor * lightColor * diff;
     vec3 specular = lightColor * spec * 0.5;
 
-    vec3 color = (ambient + diffuse + specular) * totalShadow;
-
+    vec3 color = (ambient + diffuse + specular) * lightTransmission;
 
     // Mix the ground color with water
     vec3 deepColor = vec3(0.0, 0.5, 0.7);

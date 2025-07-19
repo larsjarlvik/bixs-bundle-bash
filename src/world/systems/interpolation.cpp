@@ -12,6 +12,7 @@ namespace interpolation_systems {
             auto& state { entity.ensure<InterpolationState>() };
             state.prev_pos = transform.pos;
             state.prev_rot = transform.rot;
+            state.prev_scale = transform.scale;
         }};
 
         // Sets the interpolated value between game loop steps for rendering
@@ -19,6 +20,7 @@ namespace interpolation_systems {
             const float alpha { iter.delta_time() };
 
             state.render_pos = Vector3Lerp(state.prev_pos, transform.pos, alpha);
+            state.render_scale = Lerp(state.prev_scale, transform.scale, alpha);
             state.render_rot = QuaternionSlerp(
                 QuaternionFromEuler( state.prev_rot.x * DEG2RAD, state.prev_rot.y * DEG2RAD, state.prev_rot.z* DEG2RAD),
                 QuaternionFromEuler(transform.rot.x * DEG2RAD, transform.rot.y * DEG2RAD, transform.rot.z* DEG2RAD),

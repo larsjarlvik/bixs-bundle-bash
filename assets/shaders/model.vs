@@ -13,13 +13,15 @@ out vec3 fragPosition;
 out vec3 fragNormal;
 out vec3 fragColor;
 out vec2 fragTexCoord;
+out vec4 fragClipPos;
 
 void main() {
-    fragPosition = vertexPosition;
+    fragPosition = (matModel * vec4(vertexPosition, 1.0)).xyz;
     fragNormal = normalize(mat3(transpose(inverse(matModel))) * vertexNormal);
     fragTexCoord = vertexTexCoord;
     fragColor = vertexColor;
 
     gl_Position = mvp * vec4(vertexPosition, 1.0);
+    fragClipPos = gl_Position;
 }
 

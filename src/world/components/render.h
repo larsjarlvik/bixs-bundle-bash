@@ -35,6 +35,7 @@ struct Animation {
 struct WorldTransform {
     Vector3 pos { 0.0f, 0.0f, 0.0f };
     Vector3 rot { 0.0f, 0.0f, 0.0f };
+    float scale { 1.0f };
 };
 
 struct PrevWorldTransform {

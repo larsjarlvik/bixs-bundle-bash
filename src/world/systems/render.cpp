@@ -80,9 +80,14 @@ namespace render_systems {
         // Render models
         const auto render_model { [](const flecs::iter& iter) {
             const auto* shader = iter.world().get<ModelShader>();
+            const auto *cam { iter.world().get<WorldCamera>() };
             BeginShaderMode(shader->shader);
 
             const auto query { iter.world().query<WorldModel, InterpolationState>() };
+
+            SetShaderValue(shader->shader, shader->loc_light_dir, &light_dir, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_light_color, &light_color, SHADER_UNIFORM_VEC3);
+            SetShaderValue(shader->shader, shader->loc_view_pos, &cam->camera.position, SHADER_UNIFORM_VEC3);
 
             query.each([shader](WorldModel &model, const InterpolationState &state) {
                 const auto shader_bool { static_cast<int>(model.textured) };
@@ -92,9 +97,10 @@ namespace render_systems {
                     model.model.materials[i].shader = shader->shader;
                 }
 
+                const auto mat_scale { MatrixScale(state.render_scale, state.render_scale, state.render_scale) };
                 const auto mat_rotation { QuaternionToMatrix(state.render_rot) };
                 const auto mat_translation { MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z) };
-                const auto mat_transform { MatrixMultiply(mat_rotation, mat_translation) };
+                const auto mat_transform { MatrixMultiply(mat_scale, MatrixMultiply(mat_rotation, mat_translation)) };
 
                 model.model.transform = mat_transform;
 
@@ -120,7 +126,7 @@ namespace render_systems {
                 })};
 
                 const auto translation { MatrixTranslate(state.render_pos.x, state.render_pos.y, state.render_pos.z) };
-                const Matrix scale { MatrixScale(particle_size, particle_size, particle_size) };
+                const Matrix scale { MatrixScale(particle_size * state.render_scale, particle_size * state.render_scale, particle_size * state.render_scale) };
 
                 // Combine: Scale -> Rotate -> Translate
                 const auto transform { MatrixMultiply(MatrixMultiply(scale, rotation_matrix), translation) };
@@ -165,7 +171,7 @@ namespace render_systems {
                 return Vector3Distance(cam->camera.target, a.position) < Vector3Distance(cam->camera.target, b.position);
             });
 
-            const auto shadow_count = static_cast<int>(std::min(shadows.size(), static_cast<size_t>(64)));
+            const auto shadow_count = static_cast<int>(std::min(shadows.size(), static_cast<size_t>(128)));
             std::vector<Vector3> positions(shadow_count);
             std::vector<float> radii(shadow_count);
             std::vector<float> intensities(shadow_count);

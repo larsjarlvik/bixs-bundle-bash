@@ -110,6 +110,9 @@ namespace terrain {
         auto ground_texture { LoadTexture(ASSET_PATH("textures/grass.jpg")) };
         auto coast_texture { LoadTexture(ASSET_PATH("textures/sand.jpg")) };
 
+        SetTextureWrap(coast_texture, TEXTURE_WRAP_MIRROR_REPEAT);
+        SetTextureWrap(ground_texture, TEXTURE_WRAP_MIRROR_REPEAT);
+
         GenTextureMipmaps(&ground_texture);
         GenTextureMipmaps(&coast_texture);
         SetTextureFilter(ground_texture, TEXTURE_FILTER_TRILINEAR);
