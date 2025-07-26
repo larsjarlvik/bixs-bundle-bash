@@ -7,6 +7,10 @@
 #include "world/systems/render.h"
 #include "world/systems/gameplay.h"
 
+#include <algorithm>
+
+constexpr auto MAX_FRAME_TIME { 2.0f };
+
 auto World::create_world() -> World {
     const flecs::world ecs;
 
@@ -62,7 +66,7 @@ auto World::create_world() -> World {
 }
 
 auto World::update() -> void {
-    const float dt { GetFrameTime() };
+    const float dt = std::min(GetFrameTime(), MAX_FRAME_TIME);
     accumulator += dt;
 
     // ReSharper disable once CppDFALoopConditionNotUpdated
