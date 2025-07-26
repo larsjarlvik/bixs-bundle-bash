@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 3.15)
 project(BixsBundleBash)
 
 # Build Configuration
-set(CMAKE_BUILD_TYPE Debug)
+if(NOT ANDROID)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -96,6 +99,7 @@ if(PLATFORM_ANDROID)
         atomic
     )
 
+    target_compile_options(${PROJECT_NAME} PRIVATE -O2)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         LINK_FLAGS "-u ANativeActivity_onCreate"
     )
