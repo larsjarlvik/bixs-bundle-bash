@@ -189,7 +189,7 @@ void init_game() {
                 .elapsed { util::GetRandomFloat(-1.0f, 1.0f) },
                 .center_y { 1.0f },
             })
-            .set<ShadowCaster>({ .radius = 0.15f })
+            .set<ShadowCaster>({ .radius = 0.1f })
             .set<WorldTransform>({
                 .pos { pos },
                 .rot { 0.0f, util::GetRandomFloat(0.0f, 360.0f), 0.0f }

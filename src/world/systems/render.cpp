@@ -178,7 +178,7 @@ namespace render_systems {
 
             for (int i = 0; i < shadow_count; ++i) {
                 positions[i] = shadows[i].position;
-                radii[i] = shadows[i].radius;
+                radii[i] = shadows[i].radius * shadows[i].radius * 1.44f;
                 intensities[i] = shadows[i].intensity;
             }
 

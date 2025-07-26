@@ -19,24 +19,17 @@ uniform float shadowIntensities[128];
 
 out vec4 finalColor;
 
-float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-
 void main() {
     // Shadow calculations
     float lightTransmission = 1.0;
-    for (int i = 0; i < shadowCount && i < 64; i++) {
-        vec3 shadowPos = shadowPositions[i];
-        float shadowRadius = shadowRadii[i];
-        float shadowIntensity = shadowIntensities[i];
+    for (int i = 0; i < shadowCount; i++) {
+        vec3 delta = fragPosition - shadowPositions[i];
+        float distSq = dot(delta, delta);
 
-        float dist = distance(fragPosition, shadowPos);
-        float normalizedDist = dist / shadowRadius;
+        if (distSq > shadowRadii[i]) continue;
 
-        float alpha = exp(-normalizedDist * normalizedDist * 2.5);
-        alpha *= shadowIntensity;
+        float t = distSq / shadowRadii[i];
+        float alpha = (1.0 - t) * (1.0 - t) * shadowIntensities[i];
 
         lightTransmission *= (1.0 - alpha);
     }
