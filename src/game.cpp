@@ -90,8 +90,22 @@ void init_game() {
             .speed { 0.05f }
         });
 
+    const auto tree_models = std::vector{
+        LoadModel(ASSET_PATH("models/tree-1.glb")),
+        LoadModel(ASSET_PATH("models/tree-2.glb")),
+    };
 
-    const auto tree_model { LoadModel(ASSET_PATH("models/tree.glb")) };
+    // Configure mipmapping and filtering for all materials in all models
+    for (const auto& tree_model : tree_models) {
+        for (int i = 0; i < tree_model.materialCount; i++) {
+            if (const auto& material = tree_model.materials[i]; material.maps[MATERIAL_MAP_DIFFUSE].texture.id > 0) {
+                auto& texture = material.maps[MATERIAL_MAP_DIFFUSE].texture;
+                GenTextureMipmaps(&texture);
+                SetTextureFilter(texture, TEXTURE_FILTER_TRILINEAR);
+            }
+        }
+    }
+
     for (int i { 0 }; i < 20; ++i) {
         const auto size = util::GetRandomFloat(0.9f, 1.3f);
         auto pos = Vector3 { util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE), 0.0f, util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE) };
@@ -102,8 +116,10 @@ void init_game() {
             continue;
         }
 
+        const auto tree_type = util::GetRandomInt(0, static_cast<int>(tree_models.size() - 1));
+        const auto model = tree_models[tree_type];
         world.ecs.entity()
-            .set<WorldModel>({ .model { tree_model } })
+            .set<WorldModel>({ .model { model }, .textured = true })
             .set<ShadowCaster>({ .radius = 1.3f * size })
             .set<WorldTransform>({
                 .pos { pos },
