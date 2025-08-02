@@ -13,9 +13,9 @@ uniform int shadowCount;
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 uniform vec3 viewPos;
-uniform vec3 shadowPositions[128];
-uniform float shadowRadii[128];
-uniform float shadowIntensities[128];
+uniform vec3 shadowPositions[64];
+uniform float shadowRadii[64];
+uniform float shadowIntensities[64];
 
 out vec4 finalColor;
 
@@ -48,7 +48,7 @@ void main() {
     float spec = pow(max(dot(fragNormal, halfway), 0.0), 6.0);
 
     vec3 baseColor = mix(
-        texture(texture1, fragTexCoord * 6.0).rgb,
+        texture(texture1, fragTexCoord * 8.0).rgb,
         texture(texture0, fragTexCoord * 6.0).rgb,
         clamp(fragPosition.y, 0.0, 1.0)
     );

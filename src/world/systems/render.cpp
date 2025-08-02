@@ -171,7 +171,7 @@ namespace render_systems {
                 return Vector3Distance(cam->camera.target, a.position) < Vector3Distance(cam->camera.target, b.position);
             });
 
-            const auto shadow_count = static_cast<int>(std::min(shadows.size(), static_cast<size_t>(128)));
+            const auto shadow_count = static_cast<int>(std::min(shadows.size(), static_cast<size_t>(64)));
             std::vector<Vector3> positions(shadow_count);
             std::vector<float> radii(shadow_count);
             std::vector<float> intensities(shadow_count);

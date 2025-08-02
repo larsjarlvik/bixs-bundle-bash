@@ -3,7 +3,8 @@
 #include <vector>
 
 struct MoveTo {
-    Vector3 target { 0.0f, 0.0f, 0.0f };
+    std::vector<Vector3> path;
+    size_t waypoint = 0;
     float speed {};
 };
 

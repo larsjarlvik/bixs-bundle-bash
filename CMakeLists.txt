@@ -42,10 +42,24 @@ FetchContent_Declare(
     FastNoiseLite
     URL https://github.com/Auburn/FastNoiseLite/archive/v1.1.1.tar.gz
 )
+FetchContent_Declare(
+    micropather
+    GIT_REPOSITORY https://github.com/leethomason/MicroPather.git
+    GIT_TAG master
+)
 
-FetchContent_MakeAvailable(raylib flecs FastNoiseLite)
+FetchContent_MakeAvailable(raylib flecs FastNoiseLite micropather)
 
-# Mark external library include directories as SYSTEM to suppress warnings
+if(NOT TARGET micropather)
+    add_library(micropather STATIC 
+        ${micropather_SOURCE_DIR}/micropather.cpp
+    )
+    target_include_directories(micropather PUBLIC 
+        ${micropather_SOURCE_DIR}
+    )
+    target_compile_options(micropather PRIVATE -w)
+endif()
+
 if(TARGET raylib)
     target_compile_options(raylib PRIVATE -w)
     get_target_property(RAYLIB_INCLUDE_DIRS raylib INTERFACE_INCLUDE_DIRECTORIES)
@@ -90,6 +104,7 @@ if(PLATFORM_ANDROID)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         raylib
         flecs::flecs
+        micropather
         ${native-app-glue-lib}
         ${android-lib}
         ${log-lib}
@@ -105,7 +120,7 @@ if(PLATFORM_ANDROID)
     )
 else()
     add_executable(${PROJECT_NAME} ${SRC_FILES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE raylib flecs::flecs)
+    target_link_libraries(${PROJECT_NAME} PRIVATE raylib flecs::flecs micropather)
 endif()
 
 if(ANDROID)
@@ -118,6 +133,7 @@ endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
     src
     ${fastnoiselite_SOURCE_DIR}/Cpp
+    ${micropather_SOURCE_DIR}
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17

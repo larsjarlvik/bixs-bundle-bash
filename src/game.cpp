@@ -82,11 +82,12 @@ void init_game() {
         .set<Animation>({
             .name { "Idle" },
         })
-        .set<WorldTransform>({})
+        .set<WorldTransform>({
+            .pos = { 0.0f,  terrain::get_height(0.0f, 0.0f), 0.0f },
+        })
         .set<Consumer>({ .range = 0.5f })
         .set<ShadowCaster>({ .radius = 0.5F })
         .set<MoveTo>({
-            .target {0.0f, 0.0f, 0.0f},
             .speed { 0.05f }
         });
 
@@ -120,12 +121,14 @@ void init_game() {
         const auto model = tree_models[tree_type];
         world.ecs.entity()
             .set<WorldModel>({ .model { model }, .textured = true })
-            .set<ShadowCaster>({ .radius = 1.3f * size })
+            .set<ShadowCaster>({ .radius = 1.0f * size })
             .set<WorldTransform>({
                 .pos { pos },
                 .rot { 0.0f, util::GetRandomFloat(0.0f, 360.0f), 0.0f },
                 .scale { size }
             });
+
+        terrain::block_object(pos, 0.51f);
     }
 
     const auto banana_model { LoadModel(ASSET_PATH("models/banana.glb")) };
@@ -167,12 +170,23 @@ void init_game() {
         {255, 215, 0, 255},    // Gold yolk highlights
         {101, 67, 33, 255},    // Dark olive brown cracks
     };
+
+    const auto ice_cream_model { LoadModel(ASSET_PATH("models/ice-cream.glb")) };
+    const auto ice_cream_colors = std::vector<Color>{
+        {138, 43, 226, 255},   // Purple (top scoop)
+        {220, 20, 60, 255},    // Crimson red (middle scoop)
+        {255, 140, 0, 255},    // Dark orange (cone)
+        {160, 82, 45, 255},    // Saddle brown (cone shadow)
+        {75, 0, 130, 255},     // Indigo (purple variation)
+        {178, 34, 34, 255},    // Fire brick red (red variation)
+    };
+
     // Arrays for easy indexing
-    const auto models = std::vector{ banana_model, apple_model, cheese_model, egg_model };
-    const auto color_sets = std::vector{ banana_colors, apple_colors, cheese_colors, egg_colors };
+    const auto models = std::vector{ banana_model, apple_model, cheese_model, egg_model, ice_cream_model };
+    const auto color_sets = std::vector{ banana_colors, apple_colors, cheese_colors, egg_colors, ice_cream_colors};
 
     for (int i { 0 }; i < 100; ++i) {
-        const auto consumable_type = util::GetRandomInt(0, 3);
+        const auto consumable_type = util::GetRandomInt(0, static_cast<int>(models.size()) - 1);
         const auto pos = Vector3 { util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE), 0.0f, util::GetRandomFloat(-WORLD_SIZE, WORLD_SIZE) };
 
         if (terrain::get_height(pos.x, pos.z) < 0.1f) {
@@ -209,7 +223,6 @@ void init_game() {
         }
 
         world.update();
-
         EndDrawing();
     }
 

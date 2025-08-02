@@ -12,19 +12,45 @@
 
 constexpr float SCALE { 5.0f };
 constexpr float FREQUENCY { 0.1f };
+constexpr float WATER_LEVEL { 0.0f };
 
 namespace terrain {
     std::vector<float> elevation(DETAILED_SIZE * DETAILED_SIZE);
 
+    inline auto world_to_terrain(const float world_coord) -> float {
+        return (world_coord + WORLD_CENTER) * DETAIL;
+    }
+
+    inline auto terrain_to_world(const float terrain_coord) -> float {
+        return (terrain_coord / DETAIL) - WORLD_CENTER;
+    }
+
+    inline auto world_to_terrain_index(const float world_x, const float world_z) -> int {
+        const auto tx { static_cast<int>(world_to_terrain(world_x)) };
+        const auto tz { static_cast<int>(world_to_terrain(world_z)) };
+
+        if (tx < 0 || tx >= DETAILED_SIZE || tz < 0 || tz >= DETAILED_SIZE) {
+            return -1;
+        }
+
+        return tz * DETAILED_SIZE + tx;
+    }
+
+    inline auto world_to_grid_coords(const Vector3& world_pos) -> std::pair<int, int> {
+        const auto gx { static_cast<int>(std::round(world_to_grid(world_pos.x))) };
+        const auto gz { static_cast<int>(std::round(world_to_grid(world_pos.z))) };
+        return { gx, gz };
+    }
+
     // Calculate the normal for a vertex in the terrain
-    Vector3 calculateNormal(const std::vector<float> &heights, const int x, const int z) {
+    Vector3 calculate_normal(const std::vector<float>& heights, const int x, const int z) {
         const auto hL { (x > 0) ? heights[z * DETAILED_SIZE + (x - 1)] : heights[z * DETAILED_SIZE + x] };
         const auto hR { (x < DETAILED_SIZE - 1) ? heights[z * DETAILED_SIZE + (x + 1)] : heights[z * DETAILED_SIZE + x] };
         const auto hD { (z > 0) ? heights[(z - 1) * DETAILED_SIZE + x] : heights[z * DETAILED_SIZE + x] };
         const auto hU { (z < DETAILED_SIZE - 1) ? heights[(z + 1) * DETAILED_SIZE + x] : heights[z * DETAILED_SIZE + x] };
 
-        const auto dx { (hR - hL) * DETAIL }; // Scale by detail level
-        const auto dz { (hU - hD) * DETAIL }; // Scale by detail level
+        const auto dx { (hR - hL) * DETAIL };
+        const auto dz { (hU - hD) * DETAIL };
 
         const Vector3 tangentX { 1.0f, dx, 0.0f };
         const Vector3 tangentZ { 0.0f, dz, 1.0f };
@@ -32,32 +58,49 @@ namespace terrain {
         return Vector3Normalize(Vector3CrossProduct(tangentZ, tangentX));
     }
 
-    // Generate the terrain
-    void generate_ground(const World &world) {
+    // Update pathfinding grid based on terrain
+    void update_pathfinding_grid() {
+        for (auto gz { 0 }; gz < GRID_SIZE; ++gz) {
+            for (auto gx { 0 }; gx < GRID_SIZE; ++gx) {
+                const auto world_x { grid_to_world(static_cast<float>(gx)) };
+                const auto world_z { grid_to_world(static_cast<float>(gz)) };
 
+                if (get_height(world_x, world_z) <= WATER_LEVEL - 0.4f) {
+                    block_tile(gx, gz);
+                }
+            }
+        }
+    }
+
+    // Generate the terrain
+    void generate_ground(const World& world) {
         FastNoiseLite noise;
         noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
         noise.SetSeed(util::GetRandomInt(0, 10000));
         noise.SetFrequency(FREQUENCY);
 
-        for (int z = 0; z < DETAILED_SIZE; z++) {
-            for (int x = 0; x < DETAILED_SIZE; x++) {
+        for (auto z { 0 }; z < DETAILED_SIZE; ++z) {
+            for (auto x { 0 }; x < DETAILED_SIZE; ++x) {
                 const auto index { z * DETAILED_SIZE + x };
                 const auto noiseValue { noise.GetNoise(static_cast<float>(x) / DETAIL, static_cast<float>(z) / DETAIL) };
-                const auto distance = Vector2Distance(
+                const auto distance { Vector2Distance(
                     Vector2 { WORLD_CENTER, WORLD_CENTER },
                     Vector2 { static_cast<float>(x) / static_cast<float>(DETAIL), static_cast<float>(z) / static_cast<float>(DETAIL) }
-                );
+                ) };
 
-                 elevation[index] = (noiseValue + 1.0f) * 0.5f;
+                elevation[index] = (noiseValue + 1.0f) * 0.5f;
                 elevation[index] -= distance / (static_cast<float>(WORLD_SIZE) * 0.5f);
                 elevation[index] *= SCALE;
             }
         }
 
-        constexpr auto vertex_count = DETAILED_SIZE * DETAILED_SIZE;
-        constexpr auto triangle_count = (DETAILED_SIZE - 1) * (DETAILED_SIZE - 1) * 2;
-        Mesh mesh = {
+        // Update pathfinding grid after terrain generation
+        update_pathfinding_grid();
+
+        constexpr auto vertex_count { DETAILED_SIZE * DETAILED_SIZE };
+        constexpr auto triangle_count { (DETAILED_SIZE - 1) * (DETAILED_SIZE - 1) * 2 };
+
+        Mesh mesh {
             .vertexCount { vertex_count },
             .triangleCount { triangle_count },
             .vertices { new float[vertex_count * 3] },
@@ -66,27 +109,27 @@ namespace terrain {
             .indices { new unsigned short[triangle_count * 3] },
         };
 
-        for (int z {0}; z < DETAILED_SIZE; ++z) {
-            for (int x {0}; x < DETAILED_SIZE; ++x) {
+        for (auto z { 0 }; z < DETAILED_SIZE; ++z) {
+            for (auto x { 0 }; x < DETAILED_SIZE; ++x) {
                 const auto index { z * DETAILED_SIZE + x };
 
-                mesh.vertices[index * 3] = (static_cast<float>(x) / DETAIL) - (WORLD_SIZE / 2.0f);
+                mesh.vertices[index * 3] = terrain_to_world(static_cast<float>(x));
                 mesh.vertices[index * 3 + 1] = elevation[index];
-                mesh.vertices[index * 3 + 2] = (static_cast<float>(z) / DETAIL) - (WORLD_SIZE / 2.0f);
+                mesh.vertices[index * 3 + 2] = terrain_to_world(static_cast<float>(z));
 
                 mesh.texcoords[index * 2] = static_cast<float>(x) / (DETAILED_SIZE - 1);
                 mesh.texcoords[index * 2 + 1] = static_cast<float>(z) / (DETAILED_SIZE - 1);
 
-                const auto normal { calculateNormal(elevation, x, z) };
+                const auto normal { calculate_normal(elevation, x, z) };
                 mesh.normals[index * 3] = normal.x;
                 mesh.normals[index * 3 + 1] = normal.y;
                 mesh.normals[index * 3 + 2] = normal.z;
             }
         }
 
-        int indexCount = 0;
-        for (int z = 0; z < DETAILED_SIZE - 1; z++) {
-            for (int x = 0; x < DETAILED_SIZE - 1; x++) {
+        auto indexCount { 0 };
+        for (auto z { 0 }; z < DETAILED_SIZE - 1; ++z) {
+            for (auto x { 0 }; x < DETAILED_SIZE - 1; ++x) {
                 const auto top_left { z * DETAILED_SIZE + x };
                 const auto top_right { z * DETAILED_SIZE + (x + 1) };
                 const auto bottom_left { (z + 1) * DETAILED_SIZE + x };
@@ -144,8 +187,8 @@ namespace terrain {
 
     // Get height at coordinate
     float get_height(const float world_x, const float world_z) {
-        const auto grid_x { (world_x + WORLD_SIZE / 2.0f) * DETAIL };
-        const auto grid_z { (world_z + WORLD_SIZE / 2.0f) * DETAIL };
+        const auto grid_x { world_to_terrain(world_x) };
+        const auto grid_z { world_to_terrain(world_z) };
 
         // Check bounds
         if (grid_x < 0 || grid_x >= DETAILED_SIZE - 1 || grid_z < 0 || grid_z >= DETAILED_SIZE - 1) {
@@ -186,11 +229,11 @@ namespace terrain {
 
     // Check for ground intersection and where
     std::optional<Vector3> ray_ground_intersect(const Vector3& origin, const Vector3& direction) {
-        float min_t = 0.0f;
-        float max_t = 50.0f;
+        auto min_t { 0.0f };
+        auto max_t { 50.0f };
 
         while (max_t - min_t > 0.02f) {
-            const float mid_t { (min_t + max_t) * 0.5f };
+            const auto mid_t { (min_t + max_t) * 0.5f };
             const auto pos { origin + Vector3Scale(direction, mid_t) };
 
             if (pos.y <= get_height(pos.x, pos.z)) {

@@ -1,54 +1,73 @@
 #include <flecs.h>
 #include <raylib.h>
 #include <raymath.h>
-#include <iostream>
-
 #include "world/components/gameplay.h"
 #include "world/components/render.h"
 #include "world/components/particle.h"
 #include "world/world.h"
 #include "world/terrain/terrain.h"
 
+constexpr auto max_turn { 7.5f };
+
 namespace gameplay_systems {
     void register_systems(const World &world) {
         // Sets the MoveTo component to where the player clicks
         const auto move_target_system { [](flecs::iter &iter) {
-            const auto should_move = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
-            const auto *cam = should_move ? iter.world().get_mut<WorldCamera>() : nullptr;
+            const auto should_move { IsMouseButtonDown(MOUSE_LEFT_BUTTON) };
+            const auto *cam { should_move ? iter.world().get_mut<WorldCamera>() : nullptr };
 
             while (iter.next()) {
                 if (!should_move || !cam) continue;
 
-                auto move_to{ iter.field<MoveTo>(0) };
-                const auto ray{ GetMouseRay(GetMousePosition(), cam->camera) };
+                auto move_to { iter.field<MoveTo>(0) };
+                const auto ray { GetMouseRay(GetMousePosition(), cam->camera) };
 
-                if (const auto hit{ terrain::ray_ground_intersect(ray.position, ray.direction) }) {
+                if (const auto hit { terrain::ray_ground_intersect(ray.position, ray.direction) }) {
                     for (const auto i : iter) {
-                        if (const auto target{ terrain::find_closest_shallow_point(*hit, cam->camera.target) }) {
-                            if (Vector3Distance(move_to->target, *target) > 0.5f) {
-                                move_to[i].target = *target;
-                            }
-                        }
+                        move_to[i].path.clear();
+                        move_to[i].waypoint = 0;
+                        terrain::find_path(cam->camera.target, *hit, move_to[i].path);
                     }
                 }
             }
         }};
 
-
         // Moves an animated entity with a transform towards MoveTo
         const auto move_to_system { [](const MoveTo &move_to, WorldTransform &transform, Animation &animation) {
-            const auto direction { Vector3Subtract(move_to.target, transform.pos) };
-            const auto forward { Vector3Normalize(direction) };
-
-            if (Vector2Length({ direction.x, direction.z }) < move_to.speed) {
-                transform.pos = move_to.target;
+            if (move_to.path.empty() || move_to.waypoint >= move_to.path.size()) {
                 animation.name = "Idle";
-            } else {
-                transform.pos = Vector3Add(transform.pos, Vector3Scale(forward, move_to.speed));
-                transform.rot.y = atan2f(forward.x, forward.z) * (180.0f / PI);
-                animation.name = "Run";
+                return;
             }
 
+            auto target { move_to.path[move_to.waypoint] };
+            auto direction { Vector3Subtract(target, transform.pos) };
+
+            if (Vector2Length({direction.x, direction.z}) < 0.5f) {
+                const_cast<MoveTo&>(move_to).waypoint++;
+                if (move_to.waypoint >= move_to.path.size()) {
+                    animation.name = "Idle";
+                    return;
+                }
+                target = move_to.path[move_to.waypoint];
+                direction = Vector3Subtract(target, transform.pos);
+            }
+
+            const Vector3 forward { Vector3Normalize(direction) };
+            transform.pos = Vector3Add(transform.pos, Vector3Scale(forward, move_to.speed));
+
+            // Smooth turning
+            const auto target_angle { atan2f(forward.x, forward.z) * (180.0f / PI) };
+            auto angle_diff { target_angle - transform.rot.y };
+            while (angle_diff > 180.0f) angle_diff -= 360.0f;
+            while (angle_diff < -180.0f) angle_diff += 360.0f;
+
+            if (fabsf(angle_diff) <= max_turn) {
+                transform.rot.y = target_angle;
+            } else {
+                transform.rot.y += (angle_diff > 0) ? max_turn : -max_turn;
+            }
+
+            animation.name = "Run";
             transform.pos.y = terrain::get_height(transform.pos.x, transform.pos.z);
         }};
 
