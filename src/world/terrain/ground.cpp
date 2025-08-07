@@ -12,18 +12,10 @@
 
 constexpr float SCALE { 5.0f };
 constexpr float FREQUENCY { 0.1f };
-constexpr float WATER_LEVEL { 0.0f };
 
 namespace terrain {
     std::vector<float> elevation(DETAILED_SIZE * DETAILED_SIZE);
 
-    inline auto world_to_terrain(const float world_coord) -> float {
-        return (world_coord + WORLD_CENTER) * DETAIL;
-    }
-
-    inline auto terrain_to_world(const float terrain_coord) -> float {
-        return (terrain_coord / DETAIL) - WORLD_CENTER;
-    }
 
     inline auto world_to_terrain_index(const float world_x, const float world_z) -> int {
         const auto tx { static_cast<int>(world_to_terrain(world_x)) };
@@ -58,19 +50,6 @@ namespace terrain {
         return Vector3Normalize(Vector3CrossProduct(tangentZ, tangentX));
     }
 
-    // Update pathfinding grid based on terrain
-    void update_pathfinding_grid() {
-        for (auto gz { 0 }; gz < GRID_SIZE; ++gz) {
-            for (auto gx { 0 }; gx < GRID_SIZE; ++gx) {
-                const auto world_x { grid_to_world(static_cast<float>(gx)) };
-                const auto world_z { grid_to_world(static_cast<float>(gz)) };
-
-                if (get_height(world_x, world_z) <= WATER_LEVEL - 0.4f) {
-                    block_tile(gx, gz);
-                }
-            }
-        }
-    }
 
     // Generate the terrain
     void generate_ground(const World& world) {
@@ -93,9 +72,6 @@ namespace terrain {
                 elevation[index] *= SCALE;
             }
         }
-
-        // Update pathfinding grid after terrain generation
-        update_pathfinding_grid();
 
         constexpr auto vertex_count { DETAILED_SIZE * DETAILED_SIZE };
         constexpr auto triangle_count { (DETAILED_SIZE - 1) * (DETAILED_SIZE - 1) * 2 };

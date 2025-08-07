@@ -2,7 +2,9 @@
 #include <raylib.h>
 #include <vector>
 #include <cmath>
-#include "micropather.h"
+#include <micropather.h>
+#include "world/components/gameplay.h"
+#include "world/components/render.h"
 
 
 namespace terrain {
@@ -55,6 +57,27 @@ namespace terrain {
                 }
             }
         }
+    }
+
+    void update_collision_entities(const flecs::world& world) {
+        std::fill(walkable.begin(), walkable.end(), true);
+        
+        // First block terrain-based obstacles (water, etc.)
+        for (auto gz { 0 }; gz < GRID_SIZE; ++gz) {
+            for (auto gx { 0 }; gx < GRID_SIZE; ++gx) {
+                const auto world_x { grid_to_world(static_cast<float>(gx)) };
+                const auto world_z { grid_to_world(static_cast<float>(gz)) };
+
+                if (get_height(world_x, world_z) <= -0.4f) {
+                    block_tile(gx, gz);
+                }
+            }
+        }
+
+        // Then block entities with PathBlocker components
+        world.each([](const Collider& blocker, const WorldTransform& transform) {
+            block_object(transform.pos, blocker.radius);
+        });
     }
 
     bool is_position_walkable(const Vector3& world_pos) {

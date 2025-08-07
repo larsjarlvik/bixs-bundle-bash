@@ -3,7 +3,7 @@
 #include <vector>
 
 struct MoveTo {
-    std::vector<Vector3> path;
+    std::vector<Vector3> path {};
     size_t waypoint = 0;
     float speed {};
 };
@@ -26,4 +26,8 @@ struct Consumer {
 struct Consumable {
     std::vector<Color> colors;
     int particles { 25 };
+};
+
+struct Collider {
+    float radius {};
 };

@@ -8,26 +8,23 @@
 
 namespace terrain {
     void generate_water(const World &world) {
-        const auto depth_texture = LoadTextureFromImage({
-            .data = elevation.data(),
-            .width = DETAILED_SIZE,
-            .height = DETAILED_SIZE,
-            .mipmaps = 1,
-            .format = PIXELFORMAT_UNCOMPRESSED_R32
-        });
-        SetTextureFilter(depth_texture, TEXTURE_FILTER_BILINEAR);
-
-
         const auto water_texture = LoadTextureFromImage(LoadImage(ASSET_PATH("textures/water-normal.jpg")));
-
         SetTextureFilter(water_texture, TEXTURE_FILTER_BILINEAR);
         SetTextureWrap(water_texture, TEXTURE_WRAP_REPEAT);
 
         const auto water_shader { world.ecs.get<WaterShader>() };
-        const auto water_model { LoadModelFromMesh(GenMeshPlane(WORLD_SIZE, WORLD_SIZE, 1, 1)) };
+
+        const auto mesh = GenMeshPlane(WORLD_SIZE, WORLD_SIZE, DETAILED_SIZE - 1, DETAILED_SIZE - 1);
+        const auto vertex_count = mesh.vertexCount;
+        for (int i = 0; i < vertex_count; ++i) {
+            mesh.vertices[i * 3 + 1] = elevation[i];
+        }
+
+        UpdateMeshBuffer(mesh, 0, mesh.vertices, static_cast<int>(vertex_count * 3 * sizeof(float)), 0);
+
+        const auto water_model { LoadModelFromMesh(mesh) };
 
         water_model.materials[0].shader = water_shader->shader;
-        water_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = depth_texture;
         water_model.materials[0].maps[MATERIAL_MAP_NORMAL].texture = water_texture;
         world.ecs.set<WorldWater>({ .model { water_model } });
     }

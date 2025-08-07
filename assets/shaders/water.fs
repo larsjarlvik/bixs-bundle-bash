@@ -6,10 +6,10 @@ in vec3 fragNormal;
 in vec2 fragTexCoord;
 in vec3 fragTangent;
 in vec3 fragBitangent;
+in float fragSurfaceLevel;
 
 out vec4 finalColor;
 
-uniform sampler2D texture0; // depth texture
 uniform sampler2D texture2; // normal map
 uniform vec3 lightDir;
 uniform vec3 lightColor;
@@ -17,8 +17,7 @@ uniform vec3 viewPos;
 uniform float time;
 
 void main() {
-    float depth = max(-texture(texture0, fragTexCoord).r, 0.0);
-
+    float depth = max(fragSurfaceLevel - fragPosition.y, 0.0);
     vec2 worldPos2D = fragPosition.xz;
     vec2 toCenter = normalize(-worldPos2D);
 
@@ -56,7 +55,7 @@ void main() {
     float depthCurve = smoothstep(0.0, 1.0, depth * 0.4);
     vec3 baseColor = mix(shallowColor, deepColor, depthCurve);
 
-    float x = depth * 4.0;
+    float x = depth * 6.0;
     float alpha = clamp(x * x, 0.0, 0.5);
     alpha += (depth * depth) * 0.5;
 

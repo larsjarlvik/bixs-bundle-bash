@@ -104,6 +104,20 @@ namespace gameplay_systems {
             });
         }};
 
+        const auto collision_system { [&world](flecs::iter& iter) {
+            auto has_changed { false };
+
+            while (iter.next()) {
+                if (iter.changed()) {
+                    has_changed = true;
+                }
+            }
+
+            if (has_changed) {
+                terrain::update_collision_entities(world.ecs);
+            }
+        }};
+
         world.ecs.system<MoveTo>("move_target")
             .kind(world.fixed_phase)
             .run(move_target_system);
@@ -120,8 +134,13 @@ namespace gameplay_systems {
             .kind(world.fixed_phase)
             .each(bounce_system);
 
-        world.ecs.system<Consumer, WorldTransform, Animation>("eat_system")
+        world.ecs.system<Consumer, WorldTransform, Animation>("eat")
             .kind(world.fixed_phase)
             .each(eat_system);
+
+        world.ecs.system<Collider, WorldTransform>("collision")
+            .kind(world.fixed_phase)
+            .cached()
+            .run(collision_system);
     }
 }

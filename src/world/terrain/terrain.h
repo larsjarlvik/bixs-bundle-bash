@@ -16,6 +16,14 @@ constexpr int GRID_DETAIL = 4;
 constexpr int GRID_SIZE = WORLD_SIZE * GRID_DETAIL;
 
 namespace terrain {
+    inline auto world_to_terrain(const float world_coord) -> float {
+        return (world_coord + WORLD_CENTER) * DETAIL;
+    }
+
+    inline auto terrain_to_world(const float terrain_coord) -> float {
+        return (terrain_coord / DETAIL) - WORLD_CENTER;
+    }
+
     extern std::vector<float> elevation;
 
     void generate_ground(const World &world);
@@ -29,6 +37,7 @@ namespace terrain {
     bool is_walkable(int x, int y);
     void block_tile(int x, int y);
     void block_object(const Vector3& world_pos, float radius);
+    void update_collision_entities(const flecs::world& world);
     void find_path(Vector3 start, Vector3 end, std::vector<Vector3>& path);
     float world_to_grid(float world_coord);
     float grid_to_world(float grid_coord);

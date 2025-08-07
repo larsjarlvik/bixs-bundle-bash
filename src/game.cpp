@@ -6,7 +6,6 @@
 #include "game.h"
 #include "rlgl.h"
 #include "util.h"
-#include "world/components/particle.h"
 #include "world/terrain/terrain.h"
 
 
@@ -122,13 +121,12 @@ void init_game() {
         world.ecs.entity()
             .set<WorldModel>({ .model { model }, .textured = true })
             .set<ShadowCaster>({ .radius = 1.0f * size })
+            .set<Collider>({ .radius = 0.5f })
             .set<WorldTransform>({
                 .pos { pos },
                 .rot { 0.0f, util::GetRandomFloat(0.0f, 360.0f), 0.0f },
                 .scale { size }
             });
-
-        terrain::block_object(pos, 0.51f);
     }
 
     const auto banana_model { LoadModel(ASSET_PATH("models/banana.glb")) };
